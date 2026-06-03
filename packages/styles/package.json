@@ -1,0 +1,13 @@
+{
+	"name": "@barely/styles",
+	"version": "0.1.0",
+	"type": "module",
+	"main": "./base.css",
+	"exports": {
+		"./base.css": "./base.css",
+		"./tokens.css": "./tokens.css"
+	},
+	"scripts": {
+		"build": "echo 'no build needed'"
+	}
+}

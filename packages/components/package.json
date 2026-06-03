@@ -1,0 +1,12 @@
+{
+	"name": "@barely/components",
+	"version": "0.1.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"exports": {
+		".": "./dist/index.js"
+	},
+	"scripts": {
+		"build": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.js"
+	}
+}
