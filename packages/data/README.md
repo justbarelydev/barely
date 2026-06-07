@@ -140,8 +140,8 @@ function UserCard({ user }) {
 ## Build
 
 ```sh
-npm run build -w packages/data   # IIFE (CDN)
-npm run build:esm -w packages/data  # ESM (npm)
-# or from root:
-npm run build:data  # both at once
+npm run build   # IIFE + ESM
+npm run watch   # auto-rebuild on changes
+npm run serve   # static server
+npm run dev     # watch + serve together
 ```

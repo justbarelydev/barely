@@ -7,9 +7,10 @@
 		".": "./dist/index.esm.js"
 	},
 	"scripts": {
-		"build": "esbuild src/index.js --bundle --minify --format=iife --outfile=dist/index.js",
-		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
+		"build": "esbuild src/index.js --bundle --minify --format=iife --outfile=dist/index.js && esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
 		"watch": "esbuild src/index.js --bundle --minify --format=iife --outfile=dist/index.js --watch",
-		"prepublishOnly": "npm run build && npm run build:esm"
+		"serve": "serve .",
+		"dev": "npm run watch & npm run serve",
+		"prepublishOnly": "npm run build"
 	}
 }
