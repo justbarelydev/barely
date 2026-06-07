@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>@barely/data — test</title>
+		<style>
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				font-family: system-ui, sans-serif;
+				padding: 2rem;
+				max-width: 640px;
+				margin: 0 auto;
+				background: #f8f8f8;
+			}
+			h1 {
+				font-size: 1.25rem;
+				margin-bottom: 1.5rem;
+			}
+			.card {
+				background: #fff;
+				border-radius: 8px;
+				padding: 1rem 1.25rem;
+				margin-bottom: 0.5rem;
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+			}
+			.attr {
+				font-family: monospace;
+				font-size: 0.7rem;
+				color: #888;
+				min-width: 180px;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				line-height: 1.4;
+			}
+			.value {
+				font-size: 0.9rem;
+			}
+			img {
+				vertical-align: middle;
+				border-radius: 4px;
+			}
+			.actions {
+				margin-bottom: 1rem;
+			}
+			button {
+				padding: 0.4rem 1rem;
+				border: 1px solid #ccc;
+				border-radius: 6px;
+				background: #fff;
+				cursor: pointer;
+				font-size: 0.85rem;
+			}
+			button:hover {
+				background: #f0f0f0;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>@barely/data</h1>
+
+		<div class="actions">
+			<button onclick="location.reload()">↻ Refresh</button>
+		</div>
+
+		<div class="card">
+			<span class="attr">data-random-name</span>
+			<span class="value" data-random-name></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-first-name</span>
+			<span class="value" data-random-first-name></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-last-name</span>
+			<span class="value" data-random-last-name></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-email</span>
+			<span class="value" data-random-email></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-job</span>
+			<span class="value" data-random-job></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-phone</span>
+			<span class="value" data-random-phone></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-website</span>
+			<span class="value" data-random-website></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-username</span>
+			<span class="value" data-random-username></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-price</span>
+			<span class="value" data-random-price></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-price="1-20"</span>
+			<span class="value" data-random-price="1-20"></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-price data-decimals="0"</span>
+			<span
+				class="value"
+				data-random-price="1-100"
+				data-decimals="0"
+			></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-rating</span>
+			<span class="value" data-random-rating></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-rating="number"</span>
+			<span class="value" data-random-rating="number"></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-rating="stars"</span>
+			<span class="value" data-random-rating="stars"></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-in-stock</span>
+			<span class="value" data-random-in-stock></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-sku</span>
+			<span class="value" data-random-sku></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-category</span>
+			<span class="value" data-random-category></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-words="8"</span>
+			<span class="value" data-random-words="8"></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-sentence</span>
+			<span class="value" data-random-sentence></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-paragraph</span>
+			<span class="value" data-random-paragraph></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-paragraph="2"</span>
+			<span class="value" data-random-paragraph="2"></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-number</span>
+			<span class="value" data-random-number></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-number="1-6"</span>
+			<span class="value" data-random-number="1-6"></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-float="0-100"</span>
+			<span class="value" data-random-float="0-100"></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-number data-decimals="3"</span>
+			<span
+				class="value"
+				data-random-number="0-1"
+				data-decimals="3"
+			></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-boolean</span>
+			<span class="value" data-random-boolean></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-company-name</span>
+			<span class="value" data-random-company-name></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-catch-phrase</span>
+			<span class="value" data-random-catch-phrase></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-street</span>
+			<span class="value" data-random-street></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-city</span>
+			<span class="value" data-random-city></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-state</span>
+			<span class="value" data-random-state></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-zip-code</span>
+			<span class="value" data-random-zip-code></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-address</span>
+			<span class="value" data-random-address></span>
+		</div>
+		<div class="card">
+			<span class="attr">data-random-image</span>
+			<img data-random-image width="180" height="80" />
+		</div>
+		<div class="card">
+			<div class="attr">data-random-image<br />(random size)</div>
+			<img data-random-image data-text="dummy text" />
+		</div>
+		<div class="card">
+			<span class="attr">
+				data-random-avatar<br />data-text="JMM"<br />width="80"
+			</span>
+			<img data-random-avatar width="80" />
+		</div>
+		<div class="card">
+			<span class="attr">data-random-avatar data-text="JM"</span>
+			<img data-random-avatar data-text="BAR" width="40" height="40" />
+		</div>
+
+		<script src="./dist/index.js"></script>
+	</body>
+</html>

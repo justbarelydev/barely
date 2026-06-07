@@ -111,9 +111,9 @@ Range — use `-` or `,`:
 Each field is also an importable function:
 
 ```js
-import { fullName, email, price } from '@barely/data';
+import { name, email, price } from '@barely/data';
 
-fullName(); // "Maria Garcia"
+name(); // "Maria Garcia"
 email(); // "maria.garcia@gmail.com"
 price(); // "149.73"
 price({ min: 10, max: 20 }); // "17.52"
@@ -123,15 +123,14 @@ price({ min: 10, max: 20, decimals: 0 }); // "17"
 Works anywhere — Node scripts, React components, whatever:
 
 ```jsx
-import { fullName, email, avatar } from '@barely/data';
+import { name, email, avatar } from '@barely/data';
 
 function UserCard({ user }) {
+	const img = avatar({ text: user?.initials });
 	return (
 		<div>
-			<img
-				src={avatar({ first: user?.firstName, last: user?.lastName })}
-			/>
-			<h3>{user?.name ?? fullName()}</h3>
+			<img src={img} />
+			<h3>{user?.name ?? name()}</h3>
 			<p>{user?.email ?? email()}</p>
 		</div>
 	);
@@ -141,6 +140,8 @@ function UserCard({ user }) {
 ## Build
 
 ```sh
-npm run build -w packages/data
-# → dist/index.js (9.8KB minified)
+npm run build -w packages/data   # IIFE (CDN)
+npm run build:esm -w packages/data  # ESM (npm)
+# or from root:
+npm run build:data  # both at once
 ```

@@ -12,7 +12,7 @@ export function lastName() {
 }
 
 /** Generate a random full name */
-export function fullName() {
+export function name() {
 	return `${firstName()} ${lastName()}`;
 }
 

@@ -9,6 +9,9 @@
 	],
 	"scripts": {
 		"build": "npm run build --workspaces",
+		"build:data": "cd packages/data && npm run build && npm run build:esm",
+		"watch:data": "cd packages/data && npm run watch",
+		"dev": "npm run watch:data & npm run serve",
 		"serve": "serve .",
 		"watch": "browser-sync start --server --files '**/*' --no-notify",
 		"lint": "eslint packages/"

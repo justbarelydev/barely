@@ -1,3 +1,4 @@
 node_modules/
 dist/
 .barely-notes/
+.DS_STORE

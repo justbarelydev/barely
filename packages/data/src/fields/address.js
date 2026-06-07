@@ -22,6 +22,6 @@ export function zipCode() {
 }
 
 /** Generate a random full address */
-export function fullAddress() {
+export function address() {
 	return `${street()}, ${city()}, ${state()} ${zipCode()}`;
 }

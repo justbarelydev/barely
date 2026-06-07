@@ -10,18 +10,19 @@ import { boolean } from './fields/boolean';
 import { number, float } from './fields/number';
 import { words, sentence, paragraph } from './fields/text';
 import {
-	fullName,
+	firstName,
+	lastName,
+	name,
 	email,
 	job,
 	phone,
 	username,
 	website,
 } from './fields/people';
-import { street, city, state, zipCode } from './fields/address';
+import { street, city, state, zipCode, address } from './fields/address';
 import { price, rating, inStock, sku, category } from './fields/commerce';
 import { companyName, catchPhrase } from './fields/company';
-import { avatar, placeholder } from './fields/image';
-import { initials, colorFromSeed } from './helpers';
+import { avatar, image } from './fields/image';
 
 const FIELD_MAP = {
 	boolean,
@@ -30,8 +31,9 @@ const FIELD_MAP = {
 	words,
 	sentence,
 	paragraph,
-	name: fullName,
-	fullName,
+	name,
+	firstName,
+	lastName,
 	email,
 	job,
 	phone,
@@ -41,6 +43,7 @@ const FIELD_MAP = {
 	city,
 	state,
 	zipCode,
+	address,
 	price,
 	rating,
 	inStock,
@@ -48,9 +51,19 @@ const FIELD_MAP = {
 	category,
 	companyName,
 	catchPhrase,
-	image: placeholder,
+	image,
 	avatar,
 };
+
+const ATTRIBUTES = Object.keys(FIELD_MAP).map((f) => `data-random-${f}`);
+const COMPANIONS = [
+	'data-text',
+	'data-bg',
+	'data-fg',
+	'data-decimals',
+	'width',
+	'height',
+];
 
 // Parse attribute value for range params
 function parseRange(val) {
@@ -174,7 +187,7 @@ function startObserver() {
 		childList: true,
 		subtree: true,
 		attributes: true,
-		attributeFilter: Object.keys(FIELD_MAP).map((f) => `data-random-${f}`),
+		attributeFilter: [...ATTRIBUTES, ...COMPANIONS],
 	});
 }
 

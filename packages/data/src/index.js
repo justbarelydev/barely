@@ -12,17 +12,17 @@ export { words, sentence, paragraph } from './fields/text';
 export {
 	firstName,
 	lastName,
-	fullName,
+	name,
 	email,
 	job,
 	phone,
 	username,
 	website,
 } from './fields/people';
-export { street, city, state, zipCode, fullAddress } from './fields/address';
+export { street, city, state, zipCode, address } from './fields/address';
 export { price, rating, inStock, sku, category } from './fields/commerce';
 export { companyName, catchPhrase } from './fields/company';
-export { avatar, placeholder } from './fields/image';
+export { avatar, image } from './fields/image';
 
 // Helpers
 export { pick, randomInt, initials, colorFromSeed, toList } from './helpers';
