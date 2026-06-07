@@ -2,11 +2,13 @@
 	"name": "@barely/data",
 	"version": "0.1.0",
 	"type": "module",
-	"main": "./dist/index.js",
+	"main": "./dist/index.esm.js",
 	"exports": {
-		".": "./dist/index.js"
+		".": "./dist/index.esm.js"
 	},
 	"scripts": {
-		"build": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.js"
+		"build": "esbuild src/index.js --bundle --minify --format=iife --outfile=dist/index.js",
+		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
+		"prepublishOnly": "npm run build && npm run build:esm"
 	}
 }
