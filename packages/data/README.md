@@ -1,11 +1,11 @@
-# @barely/data
+# @justbarely/data
 
 Add placeholder data to HTML with data attributes.
 
 ## Usage
 
 ```html
-<script src="https://unpkg.com/@barely/data/dist/index.js"></script>
+<script src="https://unpkg.com/@justbarely/data/dist/index.js"></script>
 
 <span data-random-name></span>
 <!-- Maria Garcia -->
@@ -111,7 +111,7 @@ Range — use `-` or `,`:
 Each field is also an importable function:
 
 ```js
-import { name, email, price } from '@barely/data';
+import { name, email, price } from '@justbarely/data';
 
 name(); // "Maria Garcia"
 email(); // "maria.garcia@gmail.com"
@@ -123,7 +123,7 @@ price({ min: 10, max: 20, decimals: 0 }); // "17"
 Works anywhere — Node scripts, React components, whatever:
 
 ```jsx
-import { name, email, avatar } from '@barely/data';
+import { name, email, avatar } from '@justbarely/data';
 
 function UserCard({ user }) {
 	const img = avatar({ text: user?.initials });

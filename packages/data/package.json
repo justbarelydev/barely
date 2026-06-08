@@ -1,6 +1,15 @@
 {
-	"name": "@barely/data",
+	"name": "@justbarely/data",
 	"version": "0.1.0",
+	"description": "Placeholder data via HTML data attrs or JS imports",
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/justbarelydev/barely.git"
+	},
 	"type": "module",
 	"main": "./dist/index.esm.js",
 	"exports": {
