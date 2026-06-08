@@ -4,13 +4,13 @@ A design system built on native browser APIs.
 
 ## Packages
 
-| Package              | Description                                   |
-| -------------------- | --------------------------------------------- |
-| `@barely/data`       | Placeholder data via HTML attrs or JS imports |
-| `@barely/core`       | Math, color, and utility functions            |
-| `@barely/drivers`    | Behavior-driven UI interactions               |
-| `@barely/components` | Drop-in UI components                         |
-| `@barely/styles`     | Design tokens and base styles                 |
+| Package                  | Description                                   |
+| ------------------------ | --------------------------------------------- |
+| `@justbarely/data`       | Placeholder data via HTML attrs or JS imports |
+| `@justbarely/core`       | Math, color, and utility functions            |
+| `@justbarely/drivers`    | Behavior-driven UI interactions               |
+| `@justbarely/components` | Drop-in UI components                         |
+| `@justbarely/styles`     | Design tokens and base styles                 |
 
 ## Usage
 
@@ -22,4 +22,4 @@ npm run lint               # lint all packages
 
 Each package is self-contained. `cd packages/<name>` for package-specific scripts.
 
-Published to npm under the `@barely` scope.
+Published to npm under the `@justbarely` scope.
