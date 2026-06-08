@@ -1,33 +1,28 @@
 import { pick, randomInt } from '../helpers';
-import {
-	categories,
-	productAdjectives,
-	productNouns,
-	productMaterials,
-} from '../seeds';
+import { categories } from '../seeds';
 
-/** Generate a random product category */
+/** @returns {string} A product category like Accessories */
 export function category() {
 	return pick(categories);
 }
 
-/** Generate a random product price with cents */
+/** @returns {string} A price formatted with the given decimal places */
 export function price({ min = 0, max = 1000, decimals = 2 } = {}) {
 	const value = Math.random() * (max - min) + min;
 	return value.toFixed(decimals);
 }
 
-/** Generate a random product rating */
+/** @returns {number} A star rating between 1 and 5 */
 export function rating({ min = 1, max = 5 } = {}) {
 	return randomInt(min, max);
 }
 
-/** Generate a random boolean if the product is in stock (80% chance) */
+/** @returns {boolean} 80% chance of true */
 export function inStock() {
 	return Math.random() < 0.8;
 }
 
-/** Generate a random product SKU (B100000-B999999) */
+/** @returns {string} A product SKU like B482031 */
 export function sku() {
 	return `B${randomInt(100000, 999999)}`;
 }

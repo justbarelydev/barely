@@ -502,60 +502,6 @@ export const buzzPhrases = [
 	'Champion data-driven narratives',
 ];
 
-export const buzzVerbs = [
-	'Leveraging',
-	'Driving',
-	'Optimizing',
-	'Enabling',
-	'Facilitating',
-	'Architecting',
-	'Accelerating',
-	'Transforming',
-	'Reinventing',
-	'Streamlining',
-	'Cultivating',
-	'Integrating',
-	'Maximizing',
-	'Orchestrating',
-	'Championing',
-];
-
-export const buzzAdjectives = [
-	'synergistic',
-	'scalable',
-	'cross-platform',
-	'holistic',
-	'strategic',
-	'robust',
-	'agile',
-	'vertical',
-	'core',
-	'end-to-end',
-	'best-of-breed',
-	'enterprise-grade',
-	'ROI-focused',
-	'frictionless',
-	'data-driven',
-];
-
-export const buzzNouns = [
-	'paradigms',
-	'solutions',
-	'deliverables',
-	'ecosystems',
-	'innovations',
-	'infrastructures',
-	'methodologies',
-	'markets',
-	'competencies',
-	'experiences',
-	'platforms',
-	'frameworks',
-	'initiatives',
-	'workflows',
-	'narratives',
-];
-
 // ── Company / Org ────────────────────────────────────────────
 
 export const companyAdjectives = [

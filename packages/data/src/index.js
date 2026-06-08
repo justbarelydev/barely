@@ -25,7 +25,7 @@ export { companyName, catchPhrase } from './fields/company';
 export { avatar, image } from './fields/image';
 
 // Helpers
-export { pick, randomInt, initials, colorFromSeed, toList } from './helpers';
+export { pick, randomInt, toList } from './helpers';
 
-// Auto-init DOM bridge in browser
+// DOM bridge (auto-inits in browser)
 import './browser';

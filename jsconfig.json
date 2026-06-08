@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"noUnusedLocals": true,
+		"noUnusedParameters": false,
+		"checkJs": true,
+		"strictNullChecks": false,
+		"noImplicitAny": false
+	},
+	"include": [
+		"packages/*/src/**/*.js"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
+}

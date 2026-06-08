@@ -1,12 +1,12 @@
 import { pick } from '../helpers';
 import { companyAdjectives, companyNouns, buzzPhrases } from '../seeds';
 
-/** Generate a random company name */
+/** @returns {string} A company name like Quantum Ventures */
 export function companyName() {
 	return `${pick(companyAdjectives)} ${pick(companyNouns)}`;
 }
 
-/** Generate a random company catchphrase */
+/** @returns {string} A buzzword-heavy tagline */
 export function catchPhrase() {
 	return pick(buzzPhrases);
 }

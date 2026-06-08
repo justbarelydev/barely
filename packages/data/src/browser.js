@@ -64,15 +64,14 @@ const COMPANIONS = [
 	'width',
 	'height',
 ];
+const ATTRIBUTE_FILTER = [...ATTRIBUTES, ...COMPANIONS];
 
-// Parse attribute value for range params
+// Parse range values ("1-20" or "10")
 function parseRange(val) {
 	if (!val) return {};
 	const [a, b] = val.split(/[, -]+/).map(Number);
 	return { min: a, max: isNaN(b) ? a : b };
 }
-
-// ── Field handlers ─────────────────────────────────────────────
 
 function handleGeneric(element, generator, value, dataset) {
 	const opts = parseRange(value);
@@ -148,7 +147,6 @@ const handlers = {
 	avatar: handleImage,
 };
 
-// Populate an element
 function populate(element) {
 	for (const key of Object.keys(element.dataset)) {
 		if (!key.startsWith('random')) continue;
@@ -168,7 +166,7 @@ function populateAll(root) {
 	for (const child of root.children) populateAll(child);
 }
 
-// MutationObserver for dynamically added elements
+// MutationObserver for changed/dynamically added elements
 let observer;
 
 function startObserver() {
@@ -187,7 +185,7 @@ function startObserver() {
 		childList: true,
 		subtree: true,
 		attributes: true,
-		attributeFilter: [...ATTRIBUTES, ...COMPANIONS],
+		attributeFilter: ATTRIBUTE_FILTER,
 	});
 }
 
