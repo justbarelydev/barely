@@ -21,7 +21,8 @@ function makeSVG({ width, height, bg, fg, text }) {
 }
 
 /** @returns {string} An inline SVG data URI */
-export function image({ width, height, bg, fg, text } = {}) {
+export function image(opts = {}) {
+	const { width, height, bg, fg, text } = opts;
 	const w = Number(width) || randomInt(100, 800);
 	const h = Number(height) || randomInt(100, 800);
 	return makeSVG({
@@ -34,7 +35,8 @@ export function image({ width, height, bg, fg, text } = {}) {
 }
 
 /** @returns {string} An inline SVG data URI with initials or text */
-export function avatar({ size = 80, bg, fg, text } = {}) {
+export function avatar(opts = {}) {
+	const { size = 80, bg, fg, text } = opts;
 	const svg = makeSVG({
 		width: size,
 		height: size,

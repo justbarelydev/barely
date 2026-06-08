@@ -1,7 +1,6 @@
 {
 	"compilerOptions": {
 		"noUnusedLocals": true,
-		"noUnusedParameters": false,
 		"checkJs": true,
 		"strictNullChecks": false,
 		"noImplicitAny": false

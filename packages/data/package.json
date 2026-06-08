@@ -11,6 +11,9 @@
 		"url": "git+https://github.com/justbarelydev/barely.git"
 	},
 	"type": "module",
+	"publishConfig": {
+		"access": "public"
+	},
 	"main": "./dist/index.esm.js",
 	"exports": {
 		".": "./dist/index.esm.js"

@@ -7,10 +7,10 @@
 		".": "./index.js"
 	},
 	"dependencies": {
-		"@barely/core": "*",
-		"@barely/drivers": "*",
-		"@barely/data": "*",
-		"@barely/components": "*"
+		"@justbarely/core": "*",
+		"@justbarely/drivers": "*",
+		"@justbarely/data": "*",
+		"@justbarely/components": "*"
 	},
 	"scripts": {
 		"build": "echo 'no build needed'"
