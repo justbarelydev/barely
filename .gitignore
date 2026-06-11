@@ -1,6 +1,5 @@
 node_modules/
 dist/
 .barely-notes/
-.DS_STORE
-# Include data/dist for github CDN
-!packages/data/dist/
+.DS_Store
+*.code-workspace

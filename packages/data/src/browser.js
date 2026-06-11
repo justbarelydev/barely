@@ -170,6 +170,7 @@ function populateAll(root) {
 let observer;
 
 function startObserver() {
+	if (observer) observer.disconnect();
 	observer = new MutationObserver((mutations) => {
 		for (const m of mutations) {
 			if (m.type === 'childList') {
@@ -189,15 +190,7 @@ function startObserver() {
 	});
 }
 
-function init() {
+export function init() {
 	populateAll(document.body);
 	startObserver();
-}
-
-if (typeof document !== 'undefined') {
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
-	} else {
-		init();
-	}
 }

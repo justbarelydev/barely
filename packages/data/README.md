@@ -4,8 +4,10 @@ Add placeholder data to HTML with data attributes.
 
 ## Usage
 
+### CDN — drop-in script tag
+
 ```html
-<script src="https://unpkg.com/@justbarely/data/dist/index.js"></script>
+<script src="https://unpkg.com/@justbarely/data"></script>
 
 <span data-random-name></span>
 <!-- Maria Garcia -->
@@ -18,6 +20,21 @@ Add placeholder data to HTML with data attributes.
 ```
 
 Auto-populates on load. MutationObserver handles dynamically added elements.
+
+### npm — use in a build system
+
+```sh
+npm install @justbarely/data
+```
+
+```js
+// Just the generator functions
+import { name, email, address } from '@justbarely/data';
+
+// Or activate the DOM bridge for [data-random-*] attributes
+import { init } from '@justbarely/data';
+init();
+```
 
 ## Fields
 

@@ -8,19 +8,30 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/justbarelydev/barely.git"
+		"url": "git+https://github.com/justbarelydev/barely.git",
+		"directory": "packages/data"
+	},
+	"homepage": "https://github.com/justbarelydev/barely/tree/main/packages/data#readme",
+	"bugs": {
+		"url": "https://github.com/justbarelydev/barely/issues"
 	},
 	"type": "module",
 	"publishConfig": {
 		"access": "public"
 	},
-	"main": "./dist/index.esm.js",
+	"main": "./dist/index.js",
+	"module": "./dist/index.esm.js",
 	"exports": {
-		".": "./dist/index.esm.js"
+		".": {
+			"import": "./dist/index.esm.js",
+			"default": "./dist/index.esm.js"
+		}
 	},
 	"scripts": {
-		"build": "esbuild src/index.js --bundle --minify --format=iife --outfile=dist/index.js && esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
-		"watch": "esbuild src/index.js --bundle --minify --format=iife --outfile=dist/index.js --watch",
+		"build": "npm run build:iife && npm run build:esm",
+		"build:iife": "esbuild src/cdn.js --bundle --minify --format=iife --global-name=BarelyData --outfile=dist/index.js",
+		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
+		"watch": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js --watch",
 		"serve": "serve .",
 		"dev": "npm run watch & npm run serve",
 		"prepublishOnly": "npm run build"

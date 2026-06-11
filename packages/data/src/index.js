@@ -27,5 +27,5 @@ export { avatar, image } from './fields/image';
 // Helpers
 export { pick, randomInt, toList } from './helpers';
 
-// DOM bridge (auto-inits in browser)
-import './browser';
+// DOM bridge — call init() to scan for [data-random-*] attributes
+export { init } from './browser';
