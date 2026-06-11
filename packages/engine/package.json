@@ -1,0 +1,41 @@
+{
+	"name": "@barely/engine",
+	"version": "0.1.0",
+	"description": "Component registry, MO, IO, cleanup, sync, events",
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/justbarelydev/barely.git",
+		"directory": "packages/engine"
+	},
+	"homepage": "https://github.com/justbarelydev/barely/tree/main/packages/engine#readme",
+	"bugs": {
+		"url": "https://github.com/justbarelydev/barely/issues"
+	},
+	"type": "module",
+	"publishConfig": {
+		"access": "public"
+	},
+	"main": "./dist/index.js",
+	"module": "./dist/index.esm.js",
+	"unpkg": "./dist/index.js",
+	"jsdelivr": "./dist/index.js",
+	"exports": {
+		".": {
+			"import": "./dist/index.esm.js",
+			"default": "./dist/index.esm.js"
+		}
+	},
+	"scripts": {
+		"build": "npm run build:iife && npm run build:esm",
+		"build:iife": "esbuild src/cdn.js --bundle --minify --format=iife --global-name=Barely --outfile=dist/index.js",
+		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
+		"watch": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js --watch",
+		"serve": "serve .",
+		"dev": "npm run watch & npm run serve",
+		"prepublishOnly": "npm run build"
+	}
+}
