@@ -1,5 +1,5 @@
 {
-	"name": "@barely/engine",
+	"name": "@justbarely/engine",
 	"version": "0.1.0",
 	"description": "Component registry, MO, IO, cleanup, sync, events",
 	"license": "MIT",

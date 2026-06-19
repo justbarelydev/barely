@@ -1,5 +1,5 @@
 {
-	"name": "@barely/components",
+	"name": "@justbarely/components",
 	"version": "0.1.0",
 	"type": "module",
 	"main": "./dist/index.js",

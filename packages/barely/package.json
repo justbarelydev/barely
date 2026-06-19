@@ -8,7 +8,7 @@
 	},
 	"dependencies": {
 		"@justbarely/core": "*",
-		"@justbarely/drivers": "*",
+		"@justbarely/engine": "*",
 		"@justbarely/data": "*",
 		"@justbarely/components": "*"
 	},

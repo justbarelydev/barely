@@ -1,5 +1,5 @@
 {
-	"name": "@barely/styles",
+	"name": "@justbarely/styles",
 	"version": "0.1.0",
 	"type": "module",
 	"main": "./base.css",
