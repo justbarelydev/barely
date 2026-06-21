@@ -6,14 +6,14 @@ DOM is the database. CSS variables are the rendering bridge. JS just orchestrate
 
 ## Packages
 
-| Package                  | Description                                                   | Status         |
-| ------------------------ | ------------------------------------------------------------- | -------------- |
-| `@justbarely/data`       | Placeholder data via HTML attrs or JS imports                 | ✅ Published   |
-| `@justbarely/engine`     | Component registry, MO, IO, cleanup, sync, events             | 🟡 In progress |
-| `@justbarely/core`       | Pure math functions — clamp, normalize, progress, scroll math | ⬜ Scaffold    |
-| `@justbarely/components` | Drop-in UI components (tabs, accordion, carousel, etc.)       | ⬜ Scaffold    |
-| `@justbarely/styles`     | CSS design tokens, base styles, and skins                     | ⬜ Scaffold    |
-| `barely`                 | Meta-package — re-exports everything                          | ⬜ Scaffold    |
+| Package                  | Description                                                   | Status       |
+| ------------------------ | ------------------------------------------------------------- | ------------ |
+| `@justbarely/data`       | Placeholder data via HTML attrs or JS imports                 | ✅ Published |
+| `@justbarely/engine`     | Component registry, MO, IO, cleanup, sync, events             | ✅ Done      |
+| `@justbarely/core`       | Pure math functions — clamp, normalize, progress, scroll math | ⬜ Scaffold  |
+| `@justbarely/components` | Drop-in UI components (tabs, accordion, carousel, etc.)       | ⬜ Scaffold  |
+| `@justbarely/styles`     | CSS design tokens, base styles, and skins                     | ⬜ Scaffold  |
+| `barely`                 | Meta-package — re-exports everything                          | ⬜ Scaffold  |
 
 Each package is self-contained. `cd <name>` for package-specific scripts.
 
