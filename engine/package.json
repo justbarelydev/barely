@@ -9,9 +9,9 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/justbarelydev/barely.git",
-		"directory": "packages/engine"
+		"directory": "engine"
 	},
-	"homepage": "https://github.com/justbarelydev/barely/tree/main/packages/engine#readme",
+	"homepage": "https://github.com/justbarelydev/barely/tree/main/engine#readme",
 	"bugs": {
 		"url": "https://github.com/justbarelydev/barely/issues"
 	},
