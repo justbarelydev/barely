@@ -1,25 +1,26 @@
 # barely
 
-A design system built on native browser APIs.
+A UI interaction library built on native browser APIs.
+
+DOM is the database. CSS variables are the rendering bridge. JS just orchestrates.
 
 ## Packages
 
-| Package                  | Description                                   |
-| ------------------------ | --------------------------------------------- |
-| `@justbarely/data`       | Placeholder data via HTML attrs or JS imports |
-| `@justbarely/core`       | Math, color, and utility functions            |
-| `@justbarely/drivers`    | Behavior-driven UI interactions               |
-| `@justbarely/components` | Drop-in UI components                         |
-| `@justbarely/styles`     | Design tokens and base styles                 |
+| Package                  | Description                                                   | Status         |
+| ------------------------ | ------------------------------------------------------------- | -------------- |
+| `@justbarely/data`       | Placeholder data via HTML attrs or JS imports                 | ✅ Published   |
+| `@justbarely/engine`     | Component registry, MO, IO, cleanup, sync, events             | 🟡 In progress |
+| `@justbarely/core`       | Pure math functions — clamp, normalize, progress, scroll math | ⬜ Scaffold    |
+| `@justbarely/components` | Drop-in UI components (tabs, accordion, carousel, etc.)       | ⬜ Scaffold    |
+| `@justbarely/styles`     | CSS design tokens, base styles, and skins                     | ⬜ Scaffold    |
+| `barely`                 | Meta-package — re-exports everything                          | ⬜ Scaffold    |
 
-## Usage
+Each package is self-contained. `cd <name>` for package-specific scripts.
 
 ```sh
-npm run build              # build all packages
-npm run serve              # serve this directory
-npm run lint               # lint all packages
+npm run build   # build all packages
+npm run serve   # serve this directory
+npm run lint    # lint all packages
 ```
-
-Each package is self-contained. `cd packages/<name>` for package-specific scripts.
 
 Published to npm under the `@justbarely` scope.

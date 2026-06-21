@@ -5,12 +5,17 @@
 	"type": "module",
 	"description": "UI build on native browser APIs",
 	"workspaces": [
-		"packages/*"
+		"core",
+		"data",
+		"engine",
+		"components",
+		"styles",
+		"barely"
 	],
 	"scripts": {
 		"build": "npm run build --workspaces",
 		"serve": "serve .",
-		"lint": "eslint packages/"
+		"lint": "eslint ."
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

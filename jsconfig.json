@@ -1,12 +1,13 @@
 {
 	"compilerOptions": {
-		"noUnusedLocals": true,
-		"checkJs": true,
-		"strictNullChecks": false,
-		"noImplicitAny": false
+		"paths": {
+			"@barely/*": [
+				"./*/src/index.js"
+			]
+		}
 	},
 	"include": [
-		"packages/*/src/**/*.js"
+		"*/src/**/*.js"
 	],
 	"exclude": [
 		"node_modules",
