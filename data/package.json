@@ -1,6 +1,6 @@
 {
 	"name": "@justbarely/data",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"description": "Placeholder data via HTML data attrs or JS imports",
 	"license": "MIT",
 	"files": [
