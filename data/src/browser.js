@@ -66,10 +66,10 @@ const COMPANIONS = [
 ];
 const ATTRIBUTE_FILTER = [...ATTRIBUTES, ...COMPANIONS];
 
-// Parse range values ("1-20" or "10")
+/** Parse range values like "1-20" or just "10" (single value = min and max) */
 function parseRange(val) {
 	if (!val) return {};
-	const [a, b] = val.split(/[, -]+/).map(Number);
+	const [a, b] = val.split('-').map(Number);
 	return { min: a, max: isNaN(b) ? a : b };
 }
 

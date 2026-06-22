@@ -116,12 +116,13 @@ Single value — fixed:
 <span data-random-words="8"></span> <span data-random-number="42"></span>
 ```
 
-Range — use `-` or `,`:
+Range — use a dash:
 
 ```html
 <span data-random-price="10-100"></span>
-<span data-random-price="10,100"></span>
 ```
+
+This sets `{ min: 10, max: 100 }` on the generator. A single value like `"8"` sets `{ min: 8, max: 8 }`.
 
 ## Programmatic
 

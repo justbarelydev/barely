@@ -26,7 +26,7 @@ const getPool = (event) => {
 const setupGlobalListener = (event, pool) => {
 	activeGlobals.add(event);
 	window.addEventListener(event, (e) => {
-		for (const { handler } of pool) handler(e);
+		for (const handler of pool) handler(e);
 	});
 };
 
@@ -44,10 +44,10 @@ export const listen = (root, event, handler, selector) => {
 
 		if (target && root.contains(target)) handler(e, target);
 	};
+	/** Keep a reference to this handler so cleanup can remove it from the pool later */
 	const _handler = selector ? wrapped : handler;
-	const entry = { handler: _handler };
 
-	pool.add(entry);
+	pool.add(_handler);
 
 	if (!activeGlobals.has(event)) setupGlobalListener(event, pool);
 
@@ -58,7 +58,7 @@ export const listen = (root, event, handler, selector) => {
 	 *
 	 * An empty pool is basically free: listener fires but doesn't iterate anything.
 	 */
-	const cleanup = () => pool.delete(entry);
+	const cleanup = () => pool.delete(_handler);
 	registerCleanup(root, cleanup);
 	return cleanup;
 };
