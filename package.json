@@ -14,6 +14,7 @@
 	],
 	"scripts": {
 		"build": "npm run build --workspaces",
+		"dev": "vite .",
 		"serve": "serve .",
 		"lint": "eslint ."
 	},
@@ -23,6 +24,7 @@
 		"esbuild": "^0.28.0",
 		"eslint": "^10.4.1",
 		"globals": "^16.0.0",
-		"serve": "^14.2.6"
+		"serve": "^14.2.6",
+		"vite": "8.0.16"
 	}
 }

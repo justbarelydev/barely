@@ -37,14 +37,17 @@ export const Reconciler = {
 		};
 		Registry.set(name, blueprint);
 
-		return {
+		const api = {
 			onEffect: (attr, fn) => {
 				blueprint.effects[attr] = fn;
+				return api;
 			},
 			onMount: (fn) => {
 				blueprint.onMount = fn;
+				return api;
 			},
 		};
+		return api;
 	},
 
 	ignite() {

@@ -8,7 +8,7 @@
  * 	import { Barely, listen, emit, getAttr } from '@justbarely/engine'
  */
 
-import { Reconciler } from './registry.js';
+import { Reconciler } from './registry';
 
 export const Barely = {
 	register: Reconciler.register,

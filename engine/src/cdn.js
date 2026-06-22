@@ -5,8 +5,8 @@
  * For <script src="..."> usage - no manual init() call needed
  */
 
-export * from './index.js';
-import { Barely } from './index.js';
+export * from './index';
+import { Barely } from './index';
 
 if (typeof document !== 'undefined') {
 	if (document.readyState === 'loading') {
