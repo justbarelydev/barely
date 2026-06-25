@@ -9,12 +9,12 @@
  * Called by mutation.js (new elements) and intersection.js (lazy init)
  */
 
-import { getAttr, componentName, setCssVar } from './helpers/attr';
+import { getAttr, getComponentName, setCssVar } from './helpers/attr';
 import { forwardSync } from './helpers/sync';
 import { registerCleanup } from './helpers/cleanup';
 
 export const initElement = (el, Registry) => {
-	const blueprint = Registry.get(componentName(el));
+	const blueprint = Registry.get(getComponentName(el));
 	if (!blueprint) return;
 
 	blueprint.watch.forEach((key) => {

@@ -49,7 +49,7 @@ export const registerSync = (subscriber, sourceSelector) => {
  * Wire up a data-sync element from the DOM — called by mutation.js
  * Extracts the source selector from data-sync and registers the link
  */
-export const bindElement = (el) => {
+export const bindSyncSyncElement = (el) => {
 	const syncAttr = getAttr(el, 'sync');
 	if (syncAttr) registerSync(el, syncAttr);
 };

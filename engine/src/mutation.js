@@ -12,8 +12,8 @@
  */
 
 import { COMPONENT, SYNC } from './constants';
-import { bindElement } from './helpers/sync';
-import { componentName, setCssVar } from './helpers/attr';
+import { bindSyncElement } from './helpers/sync';
+import { getComponentName, setCssVar } from './helpers/attr';
 import { initElement } from './init';
 import { runCleanup } from './helpers/cleanup';
 import { forwardSync } from './helpers/sync';
@@ -27,7 +27,7 @@ function buildWatchedAttrSet(Registry) {
 }
 
 function initComponent(node, Registry) {
-	if (componentName(node) && Registry.has(componentName(node))) {
+	if (getComponentName(node) && Registry.has(getComponentName(node))) {
 		initElement(node, Registry);
 	}
 }
@@ -36,12 +36,12 @@ function initComponentChildren(node, Registry) {
 	node.querySelectorAll(COMPONENT).forEach((el) => initElement(el, Registry));
 }
 
-function bindSyncElement(el) {
-	if (el.matches?.(SYNC)) bindElement(el);
+function tryBindSync(el) {
+	if (el.matches?.(SYNC)) bindSyncElement(el);
 }
 
 function bindSyncChildren(node) {
-	node.querySelectorAll(SYNC).forEach((el) => bindElement(el));
+	node.querySelectorAll(SYNC).forEach((el) => bindSyncElement(el));
 }
 
 function handleAttrChange(mutation, Registry) {
@@ -54,7 +54,7 @@ function handleAttrChange(mutation, Registry) {
 	const root = target.closest(COMPONENT);
 	if (!root) return;
 
-	const blueprint = Registry.get(componentName(root));
+	const blueprint = Registry.get(getComponentName(root));
 	if (!blueprint) return;
 
 	const key = attributeName.replace('data-', '');
@@ -76,7 +76,7 @@ export const initMutation = (Registry) => {
 					if (node.nodeType !== 1) return;
 					initComponent(node, Registry);
 					initComponentChildren(node, Registry);
-					bindSyncElement(node);
+					tryBindSync(node);
 					bindSyncChildren(node);
 				});
 
@@ -99,5 +99,5 @@ export const initMutation = (Registry) => {
 	});
 
 	/** MO only catches dynamically added elements — bind existing ones */
-	document.querySelectorAll(SYNC).forEach((el) => bindElement(el));
+	document.querySelectorAll(SYNC).forEach((el) => bindSyncElement(el));
 };

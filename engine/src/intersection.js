@@ -12,7 +12,7 @@
  */
 
 import { COMPONENT } from './constants';
-import { componentName } from './helpers/attr';
+import { getComponentName } from './helpers/attr';
 import { initElement } from './init';
 
 export const initIntersection = (Registry) => {
@@ -40,7 +40,7 @@ export const initIntersection = (Registry) => {
 	};
 
 	document.querySelectorAll(COMPONENT).forEach((el) => {
-		const blueprint = Registry.get(componentName(el));
+		const blueprint = Registry.get(getComponentName(el));
 		if (!blueprint?.lazy) {
 			initElement(el, Registry);
 			return;

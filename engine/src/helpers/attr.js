@@ -13,7 +13,7 @@ export const removeAttr = (el, key) => delete el.dataset[key];
 export const toggleAttr = (el, key) =>
 	hasAttr(el, key) ? removeAttr(el, key) : setAttr(el, key, '');
 
-export const componentName = (el) => el.dataset.component ?? null;
+export const getComponentName = (el) => el.dataset.component ?? null;
 export const closestComponent = (el) => el.closest(COMPONENT) ?? null;
 export const findComponents = (el, name) => {
 	const attr = 'data-component';

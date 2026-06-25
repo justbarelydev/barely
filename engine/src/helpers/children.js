@@ -1,17 +1,17 @@
 /**
  * @justbarely/engine - child elements
  *
- * resolveIndex(root, selector, val, { attr }) - find child by position or named attr
+ * getChildIndex(root, selector, val, { attr }) - find child by position or named attr
  * 	- val = null: returns -1 (deactivates)
  *  - attr provided: lookup by attr match (e.g. aria-controls)
  *  - default: parse numeric index
  *
- * syncActiveChild(root, selector, attr, activeIndex) - toggle attr on one child
+ * setActiveChild(root, selector, attr, activeIndex) - toggle attr on one child
  */
 
 import { getAttr, setAttr, removeAttr } from './attr';
 
-export const resolveIndex = (root, selector, val, { attr: attrName } = {}) => {
+export const getChildIndex = (root, selector, val, { attr: attrName } = {}) => {
 	/** null = deactivate all */
 	if (val === null) return -1;
 
@@ -34,7 +34,7 @@ export const resolveIndex = (root, selector, val, { attr: attrName } = {}) => {
 	return isNaN(n) ? 0 : n;
 };
 
-export const syncActiveChild = (root, selector, attr, activeIndex) => {
+export const setActiveChild = (root, selector, attr, activeIndex) => {
 	const children = [...root.querySelectorAll(selector)];
 	children.forEach((child, i) => {
 		/** Set blank attr on active child (boolean presence), remove from others */
