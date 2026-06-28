@@ -1,60 +1,46 @@
 /**
- * @justbarely/engine - component registry
+ * @justbarely/engine - component registration and engine initialization
  *
- * Main registry for all component blueprints
- * Reconciler.register(name, opts) stores the blueprint
- * Reconciler.ignite() starts the observers and inits existing elements
- *
- * Blueprint shape:
- * 	{
- * 		watch: [],
- * 		refract: [],
- * 		lazy: false,
- * 		effects: {},
- * 		onMount: null
- * 	}
- *
- * register() returns { onEffect, onMount } for chaining
- * 	component.onMount((root) => {...})
- *
- * Effects are stored by attr key and called when that attr changes
+ * init() and register() share the Registry so they're both defined here
  */
 
 import { initMutation } from './mutation';
 import { initIntersection } from './intersection';
 
+/** Keeper of the keys for all components */
 export const Registry = new Map();
+
+/**
+ * Register components to hook them into the engine and to get those
+ * sweet sweet lifecycle methods
+ *
+ * onMount: fires immediately or when scrolled into view if lazy:true
+ * onEffect: fires on watched attribute changes
+ * refract: copies attribute values to inline CSS variables
+ */
+export function register(
+	name,
+	{ watch = [], refract = [], lazy = false } = {},
+) {
+	const blueprint = { watch, refract, lazy, effects: {}, onMount: null };
+	Registry.set(name, blueprint);
+
+	return {
+		onEffect: (attr, fn) => {
+			blueprint.effects[attr] = fn;
+		},
+		onMount: (fn) => {
+			blueprint.onMount = fn;
+		},
+	};
+}
+
+/** Initialize MO and IO for registered components */
 let initialized = false;
+export function init() {
+	if (initialized || Registry.size === 0) return;
+	initialized = true;
 
-export const Reconciler = {
-	register: (name, { watch = [], refract = [], lazy = false } = {}) => {
-		const blueprint = {
-			watch,
-			refract,
-			lazy,
-			effects: {},
-			onMount: null,
-		};
-		Registry.set(name, blueprint);
-
-		const api = {
-			onEffect: (attr, fn) => {
-				blueprint.effects[attr] = fn;
-				return api;
-			},
-			onMount: (fn) => {
-				blueprint.onMount = fn;
-				return api;
-			},
-		};
-		return api;
-	},
-
-	ignite() {
-		if (initialized || Registry.size === 0) return;
-		initialized = true;
-
-		initMutation(Registry);
-		initIntersection(Registry);
-	},
-};
+	initMutation(Registry);
+	initIntersection(Registry);
+}

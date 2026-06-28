@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"paths": {
-			"@barely/*": [
+			"@justbarely/*": [
 				"./*/src/index.js"
 			]
 		}

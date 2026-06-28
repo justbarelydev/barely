@@ -1,51 +1,46 @@
 /**
  * @justbarely/engine - IntersectionObserver (pooled)
  *
- * Pooled IO keyed by JSON-stringified opts
- * One observer per unique config - shared by all elements
+ * Scans the DOM and inits lazy components when they scroll into view
  *
- * lazy: true - observe before init
- * lazy: { rootMargin: '200px' } - custom IO options
+ * Uses the observe() helper for pooling - one IO per unique opts config because
+ * that's what IO demands of us and because it's more performant to add to an
+ * existing IO than to create a new one
  *
- * Elements are unobserved after first intersection
- * Non-lazy components init immediately
+ * lazy: true 			— wait for first intersection
+ * lazy: { rootMargin }	— wait with custom IO options
+ * lazy: false/undefined - init immediately
  */
 
 import { COMPONENT } from './constants';
 import { getComponentName } from './helpers/attr';
+import { children } from './helpers/children';
 import { initElement } from './init';
+import { attachAttrMO } from './mutation';
+import { observe } from './helpers/observe';
 
+/** Scan the DOM for registered components */
 export const initIntersection = (Registry) => {
-	/** Pool of IO instances keyed by JSON.stringify(opts) */
-	const IOs = new Map();
-
-	const observe = (el, opts = {}) => {
-		const key = JSON.stringify(opts);
-		/** Create a new IO if this config hasn't been seen before */
-		if (!IOs.has(key)) {
-			IOs.set(
-				key,
-				new IntersectionObserver((entries) => {
-					entries.forEach((entry) => {
-						if (entry.isIntersecting) {
-							initElement(entry.target, Registry);
-							/** One-shot — stop watching after first intersection */
-							IOs.get(key).unobserve(entry.target);
-						}
-					});
-				}, opts),
-			);
-		}
-		IOs.get(key).observe(el);
-	};
-
-	document.querySelectorAll(COMPONENT).forEach((el) => {
+	children(document, COMPONENT).forEach((el) => {
 		const blueprint = Registry.get(getComponentName(el));
+
+		/** Not lazy — init and attach MO immediately */
 		if (!blueprint?.lazy) {
 			initElement(el, Registry);
+			attachAttrMO(el, blueprint);
 			return;
 		}
+
+		/** Lazy — wait for first intersection and init once */
 		const opts = typeof blueprint.lazy === 'object' ? blueprint.lazy : {};
-		observe(el, opts);
+		observe(
+			el,
+			(entry) => {
+				const blueprint = Registry.get(getComponentName(entry.target));
+				initElement(entry.target, Registry);
+				if (blueprint) attachAttrMO(entry.target, blueprint);
+			},
+			{ ...opts, once: true },
+		);
 	});
 };

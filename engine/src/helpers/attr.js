@@ -1,19 +1,19 @@
 /**
  * @justbarely/engine - attribute helpers
- * Thin wrappers for dataset for cleaner and more consistent null handling
- * setCssVar writes to style.setProperty - refraction
+ * These are just thin wrappers for dealing with attributes
  */
 
 import { COMPONENT } from '../constants';
 
-export const getAttr = (el, key) => el.dataset[key] ?? null;
-export const setAttr = (el, key, val) => (el.dataset[key] = val);
-export const hasAttr = (el, key) => key in el.dataset;
-export const removeAttr = (el, key) => delete el.dataset[key];
-export const toggleAttr = (el, key) =>
-	hasAttr(el, key) ? removeAttr(el, key) : setAttr(el, key, '');
+/** Attrs */
+export const getAttr = (el, key) => el.getAttribute(key);
+export const setAttr = (el, key, val) => el.setAttribute(key, val);
+export const hasAttr = (el, key) => el.hasAttribute(key);
+export const removeAttr = (el, key) => el.removeAttribute(key);
+export const toggleAttr = (el, key) => el.toggleAttribute(key);
 
-export const getComponentName = (el) => el.dataset.component ?? null;
+/** Components */
+export const getComponentName = (el) => el.getAttribute('data-component');
 export const closestComponent = (el) => el.closest(COMPONENT) ?? null;
 export const findComponents = (el, name) => {
 	const attr = 'data-component';
@@ -21,5 +21,6 @@ export const findComponents = (el, name) => {
 	return [...el.querySelectorAll(selector)];
 };
 
+/** This is refract - convert an attribute to a CSS var as an inline style */
 export const setCssVar = (el, name, val) =>
 	el.style.setProperty(`--${name}`, val);

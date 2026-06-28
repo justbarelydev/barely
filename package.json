@@ -10,7 +10,7 @@
 		"engine",
 		"components",
 		"styles",
-		"barely"
+		"ui"
 	],
 	"scripts": {
 		"build": "npm run build --workspaces",

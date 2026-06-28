@@ -1,25 +1,22 @@
 /**
- * Cleanup system - WeakMap teardown for elements
+ * @justbarely/engine - teardown system
  *
- * registerCleanup(el, fn) stores a teardown function tied to an element
- * runCleanup(el) fires all teardowns, remove from WeakMap
+ * This is used everywhere — onMount returns, DOM removal (mutation.js), event
+ * listeners (events.js)
  *
- * Multiple teardowns per element via Set
- * Auto garbage collection when elements are collected - auto cleanup
- *
- * Used by:
- *   - init.js (onMount() returns)
- *   - mutation.js (DOM node removal)
- *   - events.js (listeners)
+ * This is how we avoid leaks without having to think about it
  */
 
+/** WeakMap gives us automatic cleanup */
 const Cleanups = new WeakMap();
 
+/** Stores a cleanup function tied to a DOM element */
 export const registerCleanup = (el, fn) => {
 	if (!Cleanups.has(el)) Cleanups.set(el, new Set());
 	Cleanups.get(el).add(fn);
 };
 
+/** Fires all those cleanups stored on an element and delete them */
 export const runCleanup = (el) => {
 	Cleanups.get(el)?.forEach((fn) => fn());
 	Cleanups.delete(el);

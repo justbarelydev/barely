@@ -31,7 +31,7 @@
 	},
 	"scripts": {
 		"build": "npm run build:iife && npm run build:esm",
-		"build:iife": "esbuild src/cdn.js --bundle --minify --format=iife --global-name=BarelyEngine --outfile=dist/index.js",
+		"build:iife": "esbuild src/cdn.js --bundle --minify --format=iife --global-name=Barely --outfile=dist/index.js",
 		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
 		"watch": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js --watch",
 		"serve": "serve .",
