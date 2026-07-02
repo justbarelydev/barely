@@ -35,7 +35,9 @@ export const initIntersection = (Registry) => {
 		const opts = typeof blueprint.lazy === 'object' ? blueprint.lazy : {};
 		observe(
 			el,
-			(entry) => {
+			(entries) => {
+				const entry = entries.find((e) => e.isIntersecting);
+				if (!entry) return;
 				const blueprint = Registry.get(getComponentName(entry.target));
 				initElement(entry.target, Registry);
 				if (blueprint) attachAttrMO(entry.target, blueprint);

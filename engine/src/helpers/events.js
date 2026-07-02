@@ -44,8 +44,15 @@ export const listen = (root, event, handler, selector) => {
 	const pool = getPool(event);
 	const wrapped = (e) => {
 		const target = e.target.closest(selector);
+		if (!target || !root.contains(target)) return;
 
-		if (target && root.contains(target)) handler(e, target);
+		/** Don't handle events from nested components (only when root IS one) */
+		if (root.getAttribute) {
+			const owner = target.closest('[data-component]');
+			if (owner && owner !== root) return;
+		}
+
+		handler(e, target, root);
 	};
 	const _handler = selector ? wrapped : handler;
 

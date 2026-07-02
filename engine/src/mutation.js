@@ -15,6 +15,32 @@ import { children } from './helpers/children';
 import { initElement } from './init';
 import { runCleanup } from './helpers/cleanup';
 
+/** Per-element, per-attribute write counter — catches runaway loops */
+const RUNAWAY_LIMIT = 25;
+const _counts = new WeakMap();
+
+const isRunaway = (el, attr) => {
+	const bucket = (performance.now() / 16) | 0;
+	let counts = _counts.get(el);
+	if (!counts) _counts.set(el, (counts = new Map()));
+
+	const entry = counts.get(attr);
+	if (!entry || entry.bucket !== bucket) {
+		counts.set(attr, { bucket, count: 1 });
+		return false;
+	}
+
+	if (++entry.count === RUNAWAY_LIMIT) {
+		console.error(
+			`barely: runaway update on [${attr}] — halting. ` +
+				`Check onEffect for infinite loops.`,
+			el,
+		);
+	}
+
+	return entry.count >= RUNAWAY_LIMIT;
+};
+
 /**
  * Per-component attribute observers — WeakMap for automatic cleanup if the
  * component element is removed from the DOM
@@ -32,11 +58,15 @@ const AttrObservers = new WeakMap();
 function createAttrObserver(blueprint) {
 	return new MutationObserver((mutations) => {
 		for (const mutation of mutations) {
+			/** Defensive: refract writes to el.style.setProperty, which
+			 *  mutates the `style` attribute. If someone puts `style` in
+			 *  watch or refract, this prevents the infinite loop. */
 			if (mutation.attributeName === 'style') continue;
 
 			const { target, attributeName, oldValue } = mutation;
 			const newValue = target.getAttribute(attributeName);
 			if (newValue === oldValue) continue;
+			if (isRunaway(target, attributeName)) continue;
 
 			/** target is the component root — observed directly */
 			if (blueprint.refract?.includes(attributeName))
@@ -59,23 +89,25 @@ export const attachAttrMO = (el, blueprint) => {
 	AttrObservers.set(el, mo);
 };
 
-/** Tears down all a component's MOs and handles nested components with children() */
-function disconnectAttrMO(root) {
-	if (root.matches?.(COMPONENT)) {
-		const mo = AttrObservers.get(root);
-		if (mo) {
-			mo.disconnect();
-			AttrObservers.delete(root);
+/**
+ * Walk the entire removed subtree and run cleanup + disconnect MOs.
+ * MutationRecord.removedNodes is top-level only — descendants aren't listed,
+ * so we crawl every element to catch nested components.
+ */
+function teardownTree(root) {
+	const all = [root, ...(root.querySelectorAll?.('*') ?? [])];
+	for (const el of all) {
+		runCleanup(el);
+		/** Clean up runaway counters too — GC handles the rest */
+		_counts.delete(el);
+		if (el.matches?.(COMPONENT)) {
+			const mo = AttrObservers.get(el);
+			if (mo) {
+				mo.disconnect();
+				AttrObservers.delete(el);
+			}
 		}
 	}
-
-	children(root, COMPONENT).forEach((el) => {
-		const mo = AttrObservers.get(el);
-		if (mo) {
-			mo.disconnect();
-			AttrObservers.delete(el);
-		}
-	});
 }
 
 /** Init and attach MO to dynamically added registered components */
@@ -123,8 +155,7 @@ export const initMutation = (Registry) => {
 
 			mutation.removedNodes.forEach((child) => {
 				if (child.nodeType !== 1) return;
-				runCleanup(child);
-				disconnectAttrMO(child);
+				teardownTree(child);
 			});
 		}
 	});
