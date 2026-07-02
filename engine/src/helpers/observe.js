@@ -1,94 +1,73 @@
 /**
  * @justbarely/engine - pooled IntersectionObserver and ResizeObserver
+ *
+ * Pooling comes up a few times in Barely because it rules. For observers,
+ * if the options object matches an existing observer's options, then it just
+ * adds the new elements to the existing observer.
+ *
+ * Less observers, MAXIMUM PERFORMANCE.
  */
 
-/**
- * Map: for storing observers by a stringified config key so we can look them up
- * and reuse them. Strings work as Map keys and Map.has/get/set is cleaner than
- * using a plain object
- *
- * WeakMap: for callbacks keyed to elements. When elements are removed from the
- * DOM and GC'd, the WeakMap entry goes with it
- *
- * No leaks and auto cleanup (sunglasses emoji)
- *
- * Map + WeakMap is a common pooling pattern (I learned) and you'll see that
- * it's used throughout the engine layer
- */
-const IOPool = new Map();
-const IOCallbacks = new WeakMap();
+const IOPool = new Map(); /** shared observers by config key */
+const IOEntries = new WeakMap(); // el → { fn, once, key }
 
 const ROPool = new Map();
 const ROCallbacks = new WeakMap();
 
 /**
- * Watches for an element to scroll into view using a pooled IO
- * One observer per IO config and shared by all elements (because, again, you
- * need a new IO if you want different options)
+ * observe() — helper for IntersectionObserver with pooling and auto cleanup.
  *
- * opts accepts all IO options plus:
- *   once: true - which fires once, then unobserves (default: false)
+ * One observer per config, shared across elements. Callbacks come back the same
+ * as they would with a normal IO, so you can decide what happens when it
+ * fires.
  *
- * Returns a cleanup function
- * Use this in onMount, or with registerCleanup for auto-teardown
- * (because why should you have to remember to teardown every time?)
+ *   once: true — fire once, then stop watching (per-element, not per-pool)
  */
 export const observe = (el, fn, opts = {}) => {
-	const { once, ...ioOpts } = opts;
+	const { once = false, ...ioOpts } = opts;
 	const key = JSON.stringify(ioOpts);
 
-	/** If you're already observing with these opts — just update the callback */
-	if (IOCallbacks.has(el)) {
-		IOCallbacks.set(el, fn);
-		return () => {
-			IOPool.get(key)?.unobserve(el);
-			IOCallbacks.delete(el);
-		};
-	}
+	/** If we're re-observing with a different config, leave the old pool first */
+	const prev = IOEntries.get(el);
+	if (prev && prev.key !== key) IOPool.get(prev.key)?.unobserve(el);
 
-	/** If the key doesn't exist in the pool, add it */
+	/** Only create a new observer if we don't have one for this config yet */
 	if (!IOPool.has(key)) {
 		IOPool.set(
 			key,
 			new IntersectionObserver((entries) => {
-				entries.forEach((entry) => {
-					if (!entry.isIntersecting) return;
-					const cb = IOCallbacks.get(entry.target);
-					if (cb) cb(entry);
-					/** One-shot — unobserve after first intersection */
-					if (once) IOPool.get(key)?.unobserve(entry.target);
-				});
+				for (const entry of entries) {
+					const config = IOEntries.get(entry.target);
+					if (!config) continue;
+					config.fn(entries);
+					if (config.once)
+						IOPool.get(config.key)?.unobserve(entry.target);
+					break;
+				}
 			}, ioOpts),
 		);
 	}
 
-	IOCallbacks.set(el, fn);
+	IOEntries.set(el, { fn, once, key });
 	IOPool.get(key).observe(el);
 
-	/** Cleanup */
 	return () => {
-		IOPool.get(key)?.unobserve(el);
-		IOCallbacks.delete(el);
+		const config = IOEntries.get(el);
+		IOPool.get(config?.key ?? key)?.unobserve(el);
+		IOEntries.delete(el);
 	};
 };
 
 /**
- * Watches for a component resizing using a pooled RO
- * (RO configs don't usually change so it's a single pool, unlike IO)
+ * resize() — helper for ResizeObserver with auto cleanup.
  *
- * Returns a cleanup function
- * Same as observe - use in onMount, or with registerCleanup for auto-teardown
- *
- * Useful for responsive components like carousel to show/hide arrows, or
- * anything that needs to recalculate on resize
- *
- * RO is better and cooler than window.addEventListener('resize')
- * because it's scoped to the element you actually care about
+ * Using a single pool here because RO configs are almost always the same.
+ * Like observe(), the callback comes back the same as it would from a normal RO.
  */
 export const resize = (el, fn) => {
 	const key = 'default';
 
-	/** Again if it's already being observed, just update the callback */
+	/** If the element is already being observed, just swap the callback */
 	if (ROCallbacks.has(el)) {
 		ROCallbacks.set(el, fn);
 		return () => {
@@ -97,15 +76,16 @@ export const resize = (el, fn) => {
 		};
 	}
 
-	/** If it's not being observed, assign to the pool and init the observer */
+	/** If there's no observer yet create it */
 	if (!ROPool.has(key)) {
 		ROPool.set(
 			key,
 			new ResizeObserver((entries) => {
-				entries.forEach((entry) => {
+				for (const entry of entries) {
 					const cb = ROCallbacks.get(entry.target);
-					if (cb) cb(entry);
-				});
+					if (cb) cb(entries);
+					break; // fn called once with full array
+				}
 			}),
 		);
 	}
@@ -113,7 +93,6 @@ export const resize = (el, fn) => {
 	ROCallbacks.set(el, fn);
 	ROPool.get(key).observe(el);
 
-	/** Cleeeeeeean */
 	return () => {
 		ROPool.get(key)?.unobserve(el);
 		ROCallbacks.delete(el);

@@ -23,4 +23,4 @@ export const findComponents = (el, name) => {
 
 /** This is refract - convert an attribute to a CSS var as an inline style */
 export const setCssVar = (el, name, val) =>
-	el.style.setProperty(`--${name}`, val);
+	el.style.setProperty(`--${name.replace(/^data-/, '')}`, val);

@@ -30,3 +30,4 @@ export * from './helpers/emit';
 export * from './helpers/sync';
 export * from './helpers/events';
 export * from './helpers/observe';
+export * from './helpers/aria';
