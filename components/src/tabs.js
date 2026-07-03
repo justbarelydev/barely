@@ -2,23 +2,23 @@
  * @justbarely/components — Tabs
  *
  *	<div data-component="tabs">
- *		<button data-tab="tab1" data-active>Tab 1</button>
- *		<button data-tab="tab2">Tab 2</button>
- *		<div data-panel="tab1" data-active>Content 1</div>
- *		<div data-panel="tab2">Content 2</div>
+ *		<button data-trigger="tab1" data-active>Tab 1</button>
+ *		<button data-trigger="tab2">Tab 2</button>
+ *		<div data-target="tab1" data-active>Content 1</div>
+ *		<div data-target="tab2">Content 2</div>
  *	</div>
  *
- * Vertical tabs
- * Add data-vertical to the root and wrap the controls in whatever you like.
- * Keyboard nav switches to ArrowUp / ArrowDown.
- * CSS handles the side-by-side layout.
+ * data-mode:
+ *   "vertical" — tabs on the left, panels on the right. Keyboard nav
+ *                switches to ArrowUp / ArrowDown. Wrap controls in a
+ *                container for the side-by-side CSS layout.
  *
- *	<div data-component="tabs" data-active="tab1" data-vertical>
+ *	<div data-component="tabs" data-active="tab1" data-mode="vertical">
  *		<div>
- *			<button data-tab="tab1" data-active></button>
+ *			<button data-trigger="tab1" data-active></button>
  *			...
  *		</div>
- *		<div data-panel="tab1" data-active>Content 1</div>
+ *		<div data-target="tab1" data-active>Content 1</div>
  * 		...
  *	</div>
  *
@@ -30,7 +30,14 @@
  *   barely:tabchange -> { active: key }
  */
 
-import { Barely, listen, emit, children, updateAria } from '@justbarely/engine';
+import {
+	Barely,
+	listen,
+	emit,
+	children,
+	updateAria,
+	hasMode,
+} from '@justbarely/engine';
 
 /** Register the component */
 const Tabs = Barely.register('tabs', { watch: ['data-active'] });
@@ -39,22 +46,20 @@ const Tabs = Barely.register('tabs', { watch: ['data-active'] });
 const TABS_ARIA = {
 	root: (el) => {
 		const attrs = { role: 'tablist' };
-		if (el.hasAttribute('data-vertical')) {
-			attrs['aria-orientation'] = 'vertical';
-		}
+		if (hasMode(el, 'vertical')) attrs['aria-orientation'] = 'vertical';
 		return attrs;
 	},
-	'[data-tab]': (el) => ({
+	'[data-trigger]': (el) => ({
 		role: 'tab',
-		'aria-controls': `barely-panel-${el.dataset.tab}`,
-		id: `barely-tab-${el.dataset.tab}`,
+		'aria-controls': `barely-target-${el.dataset.trigger}`,
+		id: `barely-trigger-${el.dataset.trigger}`,
 		'aria-selected': el.hasAttribute('data-active') ? 'true' : 'false',
 		tabindex: el.hasAttribute('data-active') ? '0' : '-1',
 	}),
-	'[data-panel]': (el) => ({
+	'[data-target]': (el) => ({
 		role: 'tabpanel',
-		'aria-labelledby': `barely-tab-${el.dataset.panel}`,
-		id: `barely-panel-${el.dataset.panel}`,
+		'aria-labelledby': `barely-trigger-${el.dataset.target}`,
+		id: `barely-target-${el.dataset.target}`,
 	}),
 };
 
@@ -62,13 +67,13 @@ const TABS_ARIA = {
 const applyActive = (root) => {
 	const key = root.dataset.active;
 
-	children(root, '[data-tab]').forEach((tab) => {
-		if (tab.dataset.tab === key) tab.setAttribute('data-active', '');
+	children(root, '[data-trigger]').forEach((tab) => {
+		if (tab.dataset.trigger === key) tab.setAttribute('data-active', '');
 		else tab.removeAttribute('data-active');
 	});
 
-	children(root, '[data-panel]').forEach((panel) => {
-		if (panel.dataset.panel === key) panel.setAttribute('data-active', '');
+	children(root, '[data-target]').forEach((panel) => {
+		if (panel.dataset.target === key) panel.setAttribute('data-active', '');
 		else panel.removeAttribute('data-active');
 	});
 };
@@ -80,11 +85,11 @@ const applyActive = (root) => {
  * 	- Up/Down for vertical.
  */
 const onKeydown = (e, tab, root) => {
-	const tabs = children(root, '[data-tab]');
+	const tabs = children(root, '[data-trigger]');
 	const i = tabs.indexOf(tab);
 	if (i === -1) return;
 
-	const vertical = root.hasAttribute('data-vertical');
+	const vertical = hasMode(root, 'vertical');
 	const nextKey = vertical ? 'ArrowDown' : 'ArrowRight';
 	const prevKey = vertical ? 'ArrowUp' : 'ArrowLeft';
 
@@ -105,7 +110,7 @@ const onKeydown = (e, tab, root) => {
 		case 'Enter':
 		case ' ':
 			e.preventDefault();
-			root.setAttribute('data-active', tab.dataset.tab);
+			root.setAttribute('data-active', tab.dataset.trigger);
 			return;
 		default:
 			return;
@@ -113,15 +118,15 @@ const onKeydown = (e, tab, root) => {
 
 	e.preventDefault();
 	tabs[next].focus();
-	root.setAttribute('data-active', tabs[next].dataset.tab);
+	root.setAttribute('data-active', tabs[next].dataset.trigger);
 };
 
 Tabs.onMount((root) => {
 	/** If no data-active on root, pull from the first active child */
 	if (!root.hasAttribute('data-active')) {
-		const activeChild = children(root, '[data-tab][data-active]')[0];
+		const activeChild = children(root, '[data-trigger][data-active]')[0];
 		if (activeChild) {
-			root.setAttribute('data-active', activeChild.dataset.tab);
+			root.setAttribute('data-active', activeChild.dataset.trigger);
 		}
 	}
 
@@ -131,11 +136,11 @@ Tabs.onMount((root) => {
 	listen(
 		root,
 		'click',
-		(e, tab) => root.setAttribute('data-active', tab.dataset.tab),
-		'[data-tab]',
+		(e, tab) => root.setAttribute('data-active', tab.dataset.trigger),
+		'[data-trigger]',
 	);
 
-	listen(root, 'keydown', onKeydown, '[data-tab]');
+	listen(root, 'keydown', onKeydown, '[data-trigger]');
 });
 
 Tabs.onEffect('data-active', (root) => {

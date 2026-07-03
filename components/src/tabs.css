@@ -6,27 +6,27 @@
  */
 
 /** Hide inactive panels and keep them out of focus order/a11y tree. */
-[data-component='tabs'] [data-panel]:not([data-active]) {
+[data-component='tabs'] [data-target]:not([data-active]) {
 	display: none;
 }
 
 /** Tabs are inline-flex buttons with native reset */
-[data-component='tabs'] [data-tab] {
+[data-component='tabs'] [data-trigger] {
 	display: inline-flex;
 	font: inherit;
 	cursor: pointer;
 }
 
 /** Accessible focus ring */
-[data-tab]:focus-visible {
+[data-trigger]:focus-visible {
 	outline: 2px solid currentColor;
 	outline-offset: 2px;
 }
 
 /** Vertical: stack tabs on the left, panels on the right */
-[data-component='tabs'][data-vertical] {
+[data-component='tabs'][data-mode~='vertical'] {
 	display: flex;
 }
-[data-component='tabs'][data-vertical] [data-tab] {
+[data-component='tabs'][data-mode~='vertical'] [data-trigger] {
 	display: flex;
 }

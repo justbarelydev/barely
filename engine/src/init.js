@@ -15,14 +15,14 @@
 
 import { forwardSync } from './helpers/sync';
 import { registerCleanup } from './helpers/cleanup';
-import { getAttr, getComponentName, setCssVar } from './helpers/attr';
+import { getComponentName, setCssVar } from './helpers/attr';
 
 export const initElement = (el, Registry) => {
 	const blueprint = Registry.get(getComponentName(el));
 	if (!blueprint) return;
 
 	blueprint.watch.forEach((key) => {
-		const val = getAttr(el, key);
+		const val = el.getAttribute(key);
 		if (val === null) return;
 
 		/** Set CSS var inline style if refract is populated */

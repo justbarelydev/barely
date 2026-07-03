@@ -11,8 +11,6 @@
  * that matches multiple components, it only syncs with the first one it finds.
  */
 
-import { getAttr } from './attr';
-
 /** WeakMap because the DOM handles cleanup */
 const Subscribers = new WeakMap();
 
@@ -31,7 +29,7 @@ export const registerSync = (subscriber, sourceSelector) => {
 
 /** Bind all [data-sync] elements (called by the mutation observer) */
 export const bindSyncElement = (el) => {
-	const syncAttr = getAttr(el, 'data-sync');
+	const syncAttr = el.dataset.sync;
 	if (syncAttr) registerSync(el, syncAttr);
 };
 

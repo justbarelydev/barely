@@ -6,11 +6,8 @@
 import { COMPONENT } from '../constants';
 
 /** Attrs */
-export const getAttr = (el, key) => el.getAttribute(key);
+/** Keeping setAttr around in case I want to add functionality later */
 export const setAttr = (el, key, val) => el.setAttribute(key, val);
-export const hasAttr = (el, key) => el.hasAttribute(key);
-export const removeAttr = (el, key) => el.removeAttribute(key);
-export const toggleAttr = (el, key) => el.toggleAttribute(key);
 
 /** Components */
 export const getComponentName = (el) => el.getAttribute('data-component');
@@ -24,3 +21,7 @@ export const findComponents = (el, name) => {
 /** This is refract - convert an attribute to a CSS var as an inline style */
 export const setCssVar = (el, name, val) =>
 	el.style.setProperty(`--${name.replace(/^data-/, '')}`, val);
+
+/** Checks if a space-separated data-mode flag is present */
+export const hasMode = (el, mode) =>
+	(el.dataset.mode || '').split(' ').includes(mode);
