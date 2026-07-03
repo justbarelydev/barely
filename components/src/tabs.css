@@ -1,0 +1,32 @@
+/**
+ * @justbarely/components — Tabs (structural styles only)
+ *
+ * Zero visual opinion. Just layout and visibility.
+ * Colors, borders, spacing, fonts → @justbarely/styles.
+ */
+
+/** Hide inactive panels and keep them out of focus order/a11y tree. */
+[data-component='tabs'] [data-panel]:not([data-active]) {
+	display: none;
+}
+
+/** Tabs are inline-flex buttons with native reset */
+[data-component='tabs'] [data-tab] {
+	display: inline-flex;
+	font: inherit;
+	cursor: pointer;
+}
+
+/** Accessible focus ring */
+[data-tab]:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+/** Vertical: stack tabs on the left, panels on the right */
+[data-component='tabs'][data-vertical] {
+	display: flex;
+}
+[data-component='tabs'][data-vertical] [data-tab] {
+	display: flex;
+}
