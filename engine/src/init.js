@@ -16,6 +16,7 @@
 import { forwardSync } from './helpers/sync';
 import { registerCleanup } from './helpers/cleanup';
 import { getComponentName, setCssVar } from './helpers/attr';
+import { emit } from './helpers/emit';
 
 export const initElement = (el, Registry) => {
 	const blueprint = Registry.get(getComponentName(el));
@@ -43,4 +44,6 @@ export const initElement = (el, Registry) => {
 
 	/** Add [data-ready] so you can do cool transitions and stuff */
 	el.setAttribute('data-ready', '');
+
+	emit(el, 'barely:mount', { name: getComponentName(el) });
 };

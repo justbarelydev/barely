@@ -12,5 +12,6 @@
  */
 
 export const emit = (el, name, detail = {}) => {
+	console.log(el);
 	el.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
 };

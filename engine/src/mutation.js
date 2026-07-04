@@ -16,6 +16,7 @@ import { getComponentName, setCssVar } from './helpers/attr';
 import { children } from './helpers/children';
 import { initElement } from './init';
 import { runCleanup } from './helpers/cleanup';
+import { emit } from './helpers/emit';
 
 /** Per-element, per-attribute write counter — catches runaway loops */
 const RUNAWAY_LIMIT = 25;
@@ -108,6 +109,7 @@ function teardownTree(root) {
 		/** Clean up runaway counters too — GC handles the rest */
 		_counts.delete(el);
 		if (el.matches?.(COMPONENT)) {
+			emit(el, 'barely:unmount', { name: getComponentName(el) });
 			const mo = AttrObservers.get(el);
 			if (mo) {
 				mo.disconnect();

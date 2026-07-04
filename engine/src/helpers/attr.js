@@ -25,3 +25,7 @@ export const setCssVar = (el, name, val) =>
 /** Checks if a space-separated data-mode flag is present */
 export const hasMode = (el, mode) =>
 	(el.dataset.mode || '').split(' ').includes(mode);
+
+/** Presence check → 'true' / 'false' for ARIA booleans */
+export const ariaBool = (el, attr) =>
+	el.hasAttribute(attr) ? 'true' : 'false';
