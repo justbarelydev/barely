@@ -36,6 +36,7 @@ import {
 	emit,
 	children,
 	updateAria,
+	ariaBool,
 	hasMode,
 } from '@justbarely/engine';
 
@@ -51,15 +52,15 @@ const TABS_ARIA = {
 	},
 	'[data-trigger]': (el) => ({
 		role: 'tab',
-		'aria-controls': `barely-target-${el.dataset.trigger}`,
-		id: `barely-trigger-${el.dataset.trigger}`,
-		'aria-selected': el.hasAttribute('data-active') ? 'true' : 'false',
+		'aria-controls': `target-${el.dataset.trigger}`,
+		id: `trigger-${el.dataset.trigger}`,
+		'aria-selected': ariaBool(el, 'data-active'),
 		tabindex: el.hasAttribute('data-active') ? '0' : '-1',
 	}),
 	'[data-target]': (el) => ({
 		role: 'tabpanel',
-		'aria-labelledby': `barely-trigger-${el.dataset.target}`,
-		id: `barely-target-${el.dataset.target}`,
+		'aria-labelledby': `trigger-${el.dataset.target}`,
+		id: `target-${el.dataset.target}`,
 	}),
 };
 
@@ -143,8 +144,11 @@ Tabs.onMount((root) => {
 	listen(root, 'keydown', onKeydown, '[data-trigger]');
 });
 
-Tabs.onEffect('data-active', (root) => {
+Tabs.onEffect('data-active', (root, _new, oldValue) => {
 	applyActive(root);
 	updateAria(root, TABS_ARIA);
-	emit(root, 'barely:tabchange', { active: root.dataset.active });
+	emit(root, 'barely:tabchange', {
+		active: root.dataset.active,
+		previous: oldValue,
+	});
 });
