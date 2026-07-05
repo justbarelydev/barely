@@ -2,7 +2,6 @@
  * @justbarely/components — Tabs (structural styles only)
  *
  * Zero visual opinion. Just layout and visibility.
- * Colors, borders, spacing, fonts → @justbarely/styles.
  */
 
 /** Hide inactive panels and keep them out of focus order/a11y tree. */
