@@ -1,0 +1,67 @@
+/**
+ * @justbarely/components — Accordion (structural styles only)
+ *
+ * Zero visual opinion. Just layout and visibility.
+ * Colors, borders, spacing, fonts -> @justbarely/styles.
+ */
+
+/** Summary gets a pointer cursor */
+[data-component='accordion'] summary {
+	cursor: pointer;
+}
+
+/** Hide closed panels */
+[data-component='accordion'] [data-target]:not([data-open]) {
+	display: none;
+}
+
+/** Accessible focus ring */
+[data-component='accordion'] summary:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+/** Horizontal: closed items shrink to trigger, open items fill remaining */
+[data-component='accordion'][data-mode~='horizontal'] {
+	display: flex;
+}
+
+/** Horizontal: keep closed panels in flow at zero width (no layout jump) */
+[data-component='accordion'][data-mode~='horizontal']
+	[data-target]:not([data-open]) {
+	display: block;
+	width: 0;
+	overflow: hidden;
+	flex: 0 0 0;
+}
+
+/** Native horizontal: details wrap summary+content */
+[data-component='accordion'][data-mode~='horizontal'] details {
+	display: flex;
+	flex: 0 1 auto;
+}
+[data-component='accordion'][data-mode~='horizontal'] details[open],
+[data-component='accordion'][data-mode~='horizontal'] > *:has(details[open]) {
+	flex: 1 1 0;
+	min-width: 0;
+}
+[data-component='accordion'][data-mode~='horizontal'] summary {
+	flex-shrink: 0;
+}
+[data-component='accordion'][data-mode~='horizontal'] details > :not(summary) {
+	flex: 1;
+}
+
+/** Custom vertical */
+[data-component='accordion']:not([data-mode~='horizontal']) [data-trigger] {
+	display: block;
+}
+
+/** Custom horizontal: flat siblings, triggers static, open panel flexes */
+[data-component='accordion'][data-mode~='horizontal'] [data-trigger] {
+	flex-shrink: 0;
+}
+[data-component='accordion'][data-mode~='horizontal'] [data-target][data-open] {
+	flex: 1 1 0;
+	min-width: 0;
+}
