@@ -2,8 +2,6 @@
 
 A UI interaction library built on native browser APIs.
 
-DOM is the database. CSS variables are the rendering bridge. JS just orchestrates.
-
 ## Packages
 
 | Package                  | Description                                                   | Status       |
