@@ -16,7 +16,8 @@
 }
 
 /** Accessible focus ring */
-[data-component='accordion'] summary:focus-visible {
+[data-component='accordion'] summary:focus-visible,
+[data-component='accordion'] [data-trigger]:focus-visible {
 	outline: 2px solid currentColor;
 	outline-offset: 2px;
 }
