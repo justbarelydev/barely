@@ -1,6 +1,6 @@
 import { Barely } from '@justbarely/engine';
 import './tabs';
 import './accordion';
-import './dialog';
+import './modal';
 
 Barely.init();
