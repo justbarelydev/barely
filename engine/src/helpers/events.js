@@ -13,16 +13,16 @@
 
 import { registerCleanup } from './cleanup';
 
-const pools = new Map(); /** store event handler sets by event type */
-const activeGlobals = new Set(); /** check which events are already on window */
+const pools = new Map(); // store event handler sets by event type
+const activeGlobals = new Set(); // check which events are already on window
 
-/** Get or create the handler set for a given event type */
+// Get or create the handler set for a given event type
 const getPool = (event) => {
 	if (!pools.has(event)) pools.set(event, new Set());
 	return pools.get(event);
 };
 
-/** Create the one global listener on window for this event type */
+// Create the one global listener on window for this event type
 const setupGlobalListener = (event, pool) => {
 	activeGlobals.add(event);
 	window.addEventListener(event, (e) => {
@@ -45,7 +45,7 @@ export const listen = (root, event, handler, selector) => {
 		const target = e.target.closest(selector);
 		if (!target || !root.contains(target)) return;
 
-		/** Don't handle events from nested components (only when root IS one) */
+		// Don't handle events from nested components (only when root IS one)
 		if (root.getAttribute) {
 			const owner = target.closest('[data-component]');
 			if (owner && owner !== root) return;

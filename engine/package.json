@@ -16,6 +16,9 @@
 		"url": "https://github.com/justbarelydev/barely/issues"
 	},
 	"type": "module",
+	"dependencies": {
+		"@justbarely/core": "^0.1.0"
+	},
 	"publishConfig": {
 		"access": "public"
 	},

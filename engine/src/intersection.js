@@ -35,19 +35,19 @@ export const initIntersection = (Registry) => {
 	children(document, COMPONENT).forEach((el) => {
 		const blueprint = Registry.get(getComponentName(el));
 
-		/** Not lazy — init and attach MO immediately */
+		// Not lazy — init and attach MO immediately
 		if (!blueprint?.lazy) {
 			initElement(el, Registry);
 			attachAttrMO(el, blueprint);
 			return;
 		}
 
-		/** Lazy — wait for first intersection and init once */
+		// Lazy — wait for first intersection and init once
 		const opts = typeof blueprint.lazy === 'object' ? blueprint.lazy : {};
 		observe(
 			el,
 			(entries) => {
-				/** Only react when the element enters the viewport */
+				// Only react when the element enters the viewport
 				const entry = entries.find((e) => e.isIntersecting);
 				if (!entry) return;
 				const blueprint = Registry.get(getComponentName(entry.target));

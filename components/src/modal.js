@@ -22,10 +22,8 @@ import { Barely, listen, emit, children } from '@justbarely/engine';
 const Modal = Barely.register('modal');
 
 const show = (root, dialog) => {
-	/**
-	 * Cancel any pending close transition so it doesn't fire when re-opening the
-	 * modal too quickly
-	 */
+	// Cancel any pending close transition so it doesn't fire when
+	// re-opening the modal too quickly
 	if (dialog._barelyTransitionEnd) {
 		dialog.removeEventListener(
 			'transitionend',
@@ -61,7 +59,7 @@ const hide = (root, dialog) => {
 };
 
 Modal.onMount((root) => {
-	/** Close overlay on click (filtered and delegated with listen()) */
+	// Close overlay on click (filtered and delegated with listen())
 	listen(
 		root,
 		'click',
@@ -71,12 +69,12 @@ Modal.onMount((root) => {
 		'dialog[data-target]',
 	);
 
-	/** Native close doesn't bubble, so we have to bind it */
+	// Native close doesn't bubble, so we have to bind it
 	children(root, 'dialog[data-target]').forEach((dialog) => {
 		dialog.addEventListener('close', () => hide(root, dialog));
 	});
 
-	/** Triggers */
+	// Triggers
 	listen(
 		root,
 		'click',

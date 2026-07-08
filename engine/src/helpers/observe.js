@@ -8,7 +8,7 @@
  * Less observers, MAXIMUM PERFORMANCE.
  */
 
-const IOPool = new Map(); /** shared observers by config key */
+const IOPool = new Map(); // shared observers by config key
 const IOEntries = new WeakMap(); // el → { fn, once, key }
 
 const ROPool = new Map();
@@ -27,11 +27,11 @@ export const observe = (el, fn, opts = {}) => {
 	const { once = false, ...ioOpts } = opts;
 	const key = JSON.stringify(ioOpts);
 
-	/** If we're re-observing with a different config, leave the old pool first */
+	// If we're re-observing with a different config, leave the old pool first
 	const prev = IOEntries.get(el);
 	if (prev && prev.key !== key) IOPool.get(prev.key)?.unobserve(el);
 
-	/** Only create a new observer if we don't have one for this config yet */
+	// Only create a new observer if we don't have one for this config yet
 	if (!IOPool.has(key)) {
 		IOPool.set(
 			key,
@@ -67,7 +67,7 @@ export const observe = (el, fn, opts = {}) => {
 export const resize = (el, fn) => {
 	const key = 'default';
 
-	/** If the element is already being observed, just swap the callback */
+	// If the element is already being observed, just swap the callback
 	if (ROCallbacks.has(el)) {
 		ROCallbacks.set(el, fn);
 		return () => {
@@ -76,7 +76,7 @@ export const resize = (el, fn) => {
 		};
 	}
 
-	/** If there's no observer yet create it */
+	// If there's no observer yet create it
 	if (!ROPool.has(key)) {
 		ROPool.set(
 			key,

@@ -18,7 +18,7 @@ import { initElement } from './init';
 import { runCleanup } from './helpers/cleanup';
 import { emit } from './helpers/emit';
 
-/** Per-element, per-attribute write counter — catches runaway loops */
+// Per-element, per-attribute write counter — catches runaway loops
 const RUNAWAY_LIMIT = 25;
 const _counts = new WeakMap();
 
@@ -76,7 +76,7 @@ function createAttrObserver(blueprint) {
 			if (newValue === oldValue) continue;
 			if (isRunaway(target, attributeName)) continue;
 
-			/** target is the component root — observed directly */
+			// target is the component root — observed directly
 			if (blueprint.refract?.includes(attributeName))
 				setCssVar(target, attributeName, newValue);
 			if (blueprint.effects[attributeName])
@@ -86,7 +86,7 @@ function createAttrObserver(blueprint) {
 	});
 }
 
-/** Creates and starts MO per component and stores it in a weakmap for auto GC */
+// Creates and starts MO per component and stores it in a weakmap for auto GC
 export const attachAttrMO = (el, blueprint) => {
 	const mo = createAttrObserver(blueprint);
 	mo.observe(el, {
@@ -106,7 +106,7 @@ function teardownTree(root) {
 	const all = [root, ...(root.querySelectorAll?.('*') ?? [])];
 	for (const el of all) {
 		runCleanup(el);
-		/** Clean up runaway counters too — GC handles the rest */
+		// Clean up runaway counters too — GC handles the rest
 		_counts.delete(el);
 		if (el.matches?.(COMPONENT)) {
 			emit(el, 'barely:unmount', { name: getComponentName(el) });
@@ -119,7 +119,7 @@ function teardownTree(root) {
 	}
 }
 
-/** Init and attach MO to dynamically added registered components */
+// Init and attach MO to dynamically added registered components
 function initComponent(node, Registry) {
 	const name = getComponentName(node);
 	if (name && Registry.has(name)) {
@@ -129,17 +129,17 @@ function initComponent(node, Registry) {
 	}
 }
 
-/** Init and slap MO on dynamically added components' children */
+// Init and slap MO on dynamically added components' children
 function initComponentChildren(node, Registry) {
 	children(node, COMPONENT).forEach((el) => initComponent(el, Registry));
 }
 
-/** Bind dynamically added [data-sync] elements */
+// Bind dynamically added [data-sync] elements
 function tryBindSync(el) {
 	if (el.matches?.(SYNC)) bindSyncElement(el);
 }
 
-/** Bind dynamically added [data-sync] children */
+// Bind dynamically added [data-sync] children
 function bindSyncChildren(node) {
 	children(node, SYNC).forEach((el) => bindSyncElement(el));
 }
@@ -174,6 +174,6 @@ export const initMutation = (Registry) => {
 		subtree: true,
 	});
 
-	/** MO only catches dynamically added elements — bind existing ones */
+	// MO only catches dynamically added elements — bind existing ones
 	children(document, SYNC).forEach((el) => bindSyncElement(el));
 };

@@ -16,6 +16,7 @@
  *   barely:tabchange -> { active: key }
  */
 
+import { wrap } from '@justbarely/core';
 import {
 	Barely,
 	listen,
@@ -75,10 +76,10 @@ const onKeydown = (e, tab, root) => {
 	let next;
 	switch (e.key) {
 		case nextKey:
-			next = (i + 1) % tabs.length;
+			next = wrap(i + 1, tabs.length);
 			break;
 		case prevKey:
-			next = (i - 1 + tabs.length) % tabs.length;
+			next = wrap(i - 1, tabs.length);
 			break;
 		case 'Home':
 			next = 0;
@@ -88,6 +89,7 @@ const onKeydown = (e, tab, root) => {
 			break;
 		case 'Enter':
 		case ' ':
+			// Prevent default behavior (space scrolling, enter submitting, etc)
 			e.preventDefault();
 			activate(root, tab.dataset.trigger);
 			return;
@@ -95,6 +97,7 @@ const onKeydown = (e, tab, root) => {
 			return;
 	}
 
+	// Prevent arrow keys from scrolling
 	e.preventDefault();
 	tabs[next].focus();
 	activate(root, tabs[next].dataset.trigger);

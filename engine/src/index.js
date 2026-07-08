@@ -22,7 +22,7 @@ export const Barely = {
 	init,
 };
 
-/** Helpers */
+// Helpers
 export * from './helpers/attr';
 export * from './helpers/cleanup';
 export * from './helpers/children';

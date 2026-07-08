@@ -26,23 +26,23 @@ export const initElement = (el, Registry) => {
 		const val = el.getAttribute(key);
 		if (val === null) return;
 
-		/** Set CSS var inline style if refract is populated */
+		// Set CSS var inline style if refract is populated
 		if (blueprint.refract?.includes(key)) setCssVar(el, key, val);
 
-		/** Effect gets null for oldValue on first run */
+		// Effect gets null for oldValue on first run
 		if (blueprint.effects[key]) blueprint.effects[key](el, val, null);
 
-		/** Update attr and CSS var on subscribers */
+		// Update attr and CSS var on subscribers
 		forwardSync(el, key, val);
 	});
 
-	/** If the component uses onMount, register it for teardown */
+	// If the component uses onMount, register it for teardown
 	if (blueprint.onMount) {
 		const teardown = blueprint.onMount(el);
 		if (typeof teardown === 'function') registerCleanup(el, teardown);
 	}
 
-	/** Add [data-ready] so you can do cool transitions and stuff */
+	// Add [data-ready] so you can do cool transitions and stuff
 	el.setAttribute('data-ready', '');
 
 	emit(el, 'barely:mount', { name: getComponentName(el) });

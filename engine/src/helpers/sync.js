@@ -11,10 +11,10 @@
  * that matches multiple components, it only syncs with the first one it finds.
  */
 
-/** WeakMap because the DOM handles cleanup */
+// WeakMap because the DOM handles cleanup
 const Subscribers = new WeakMap();
 
-/** Subscribe an element to a component's state changes */
+// Subscribe an element to a component's state changes
 export const registerSync = (subscriber, sourceSelector) => {
 	const source = document.querySelector(sourceSelector);
 	if (!source) {
@@ -27,13 +27,13 @@ export const registerSync = (subscriber, sourceSelector) => {
 	Subscribers.set(source, subs);
 };
 
-/** Bind all [data-sync] elements (called by the mutation observer) */
+// Bind all [data-sync] elements (called by the mutation observer)
 export const bindSyncElement = (el) => {
 	const syncAttr = el.dataset.sync;
 	if (syncAttr) registerSync(el, syncAttr);
 };
 
-/** Push attribute changes to subscribers — attrs + CSS vars */
+// Push attribute changes to subscribers — attrs + CSS vars
 export const forwardSync = (source, key, value) => {
 	Subscribers.get(source)?.forEach((sub) => {
 		sub.setAttribute(key, value);

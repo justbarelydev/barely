@@ -7,7 +7,7 @@
 import { initMutation } from './mutation';
 import { initIntersection } from './intersection';
 
-/** Keeper of the keys for all components */
+// Keeper of the keys for all components
 export const Registry = new Map();
 
 /**
@@ -35,7 +35,7 @@ export function register(
 	};
 }
 
-/** Initialize MO and IO for registered components */
+// Initialize MO and IO for registered components
 let initialized = false;
 export function init() {
 	if (initialized || Registry.size === 0) return;

@@ -45,10 +45,10 @@ import {
 	updateAria,
 } from '@justbarely/engine';
 
-/** Register */
+// Register
 const Accordion = Barely.register('accordion');
 
-/** Custom: [data-trigger]/[data-target] */
+// Custom: [data-trigger]/[data-target]
 
 const ACCORDION_ARIA = {
 	'[data-trigger]': (el) => ({
@@ -63,7 +63,7 @@ const ACCORDION_ARIA = {
 	}),
 };
 
-/** Close all triggers and panels in the custom path */
+// Close all triggers and panels in the custom path
 const closeAll = (root) => {
 	children(root, '[data-open]').forEach((el) =>
 		el.removeAttribute('data-open'),
@@ -71,7 +71,7 @@ const closeAll = (root) => {
 	updateAria(root, ACCORDION_ARIA);
 };
 
-/** Build and emit accordion state */
+// Build and emit accordion state
 const emitState = (root, openItems, allItems) => {
 	emit(root, 'barely:accordionchange', {
 		open: openItems.map((el) => allItems.indexOf(el)),
@@ -120,7 +120,7 @@ const initCustom = (root) => {
 	listen(root, 'keydown', onTriggerKeydown, '[data-trigger]');
 };
 
-/** Native: <details>/<summary> — browser handles toggle, name attr for exclusive */
+// Native: <details>/<summary> — browser handles toggle, name attr for exclusive
 const initNative = (root) => {
 	const items = children(root, 'details');
 
@@ -131,7 +131,7 @@ const initNative = (root) => {
 	);
 };
 
-/** Mount */
+// Mount
 Accordion.onMount((root) => {
 	children(root, 'details').length > 0 ? initNative(root) : initCustom(root);
 });
