@@ -21,45 +21,80 @@ import { Barely, listen, emit, children } from '@justbarely/engine';
 
 const Modal = Barely.register('modal');
 
+const waitForAnimation = (el, callback) => {
+	// Defer one frame so the browser computes styles from the attribute
+	// change that just happened (data-opening / data-closing).
+	requestAnimationFrame(() => {
+		const style = getComputedStyle(el);
+		const hasTransition = style.transitionDuration !== '0s';
+		const hasAnimation = style.animationDuration !== '0s';
+
+		if (!hasTransition && !hasAnimation) {
+			callback();
+			return;
+		}
+
+		if (hasTransition)
+			el.addEventListener('transitionend', callback, { once: true });
+		if (hasAnimation)
+			el.addEventListener('animationend', callback, { once: true });
+	});
+};
+
 const show = (root, dialog) => {
-	// Cancel any pending close transition so it doesn't fire when
-	// re-opening the modal too quickly
-	if (dialog._barelyTransitionEnd) {
-		dialog.removeEventListener(
-			'transitionend',
-			dialog._barelyTransitionEnd,
-		);
-		dialog._barelyTransitionEnd = null;
-	}
+	if (dialog._barelyOpening || dialog._barelyClosing) return;
+	dialog._barelyOpening = true;
 	dialog.removeAttribute('data-closing');
+	dialog.setAttribute('data-opening', '');
 	dialog.showModal();
-	dialog.setAttribute('data-open', '');
-	emit(root, 'barely:modalchange', { open: true });
+
+	waitForAnimation(dialog, () => {
+		// Defer one frame so the browser paints the animation's final
+		// frame before we swap attributes. Without this, removing
+		// data-opening cancels the animation before the final frame
+		// is committed, causing a visual snap.
+		requestAnimationFrame(() => {
+			dialog._barelyOpening = false;
+			dialog.setAttribute('data-open', '');
+			dialog.removeAttribute('data-opening');
+			emit(root, 'barely:modalchange', { open: true });
+		});
+	});
 };
 
 const hide = (root, dialog) => {
-	if (dialog.hasAttribute('data-closing')) return;
+	if (dialog._barelyClosing || dialog._barelyOpening) return;
+	dialog._barelyClosing = true;
 	dialog.setAttribute('data-closing', '');
 
-	const finish = () => {
-		dialog._barelyTransitionEnd = null;
+	waitForAnimation(dialog, () => {
+		dialog._barelyClosing = false;
 		dialog.close();
 		dialog.removeAttribute('data-open');
 		dialog.removeAttribute('data-closing');
 		emit(root, 'barely:modalchange', { open: false });
-	};
-
-	const hasTransition = getComputedStyle(dialog).transitionDuration !== '0s';
-	if (hasTransition) {
-		dialog._barelyTransitionEnd = finish;
-		dialog.addEventListener('transitionend', finish, { once: true });
-	} else {
-		finish();
-	}
+	});
 };
 
 Modal.onMount((root) => {
-	// Close overlay on click (filtered and delegated with listen())
+	children(root, 'dialog[data-target]').forEach((dialog) => {
+		// Esc key — intercept before the browser closes the dialog
+		dialog.addEventListener('cancel', (e) => {
+			e.preventDefault();
+			hide(root, dialog);
+		});
+
+		// Form submit (method="dialog") — intercept before native close
+		const form = dialog.querySelector('form[method="dialog"]');
+		if (form) {
+			form.addEventListener('submit', (e) => {
+				e.preventDefault();
+				hide(root, dialog);
+			});
+		}
+	});
+
+	// Close overlay on click
 	listen(
 		root,
 		'click',
@@ -68,11 +103,6 @@ Modal.onMount((root) => {
 		},
 		'dialog[data-target]',
 	);
-
-	// Native close doesn't bubble, so we have to bind it
-	children(root, 'dialog[data-target]').forEach((dialog) => {
-		dialog.addEventListener('close', () => hide(root, dialog));
-	});
 
 	// Triggers
 	listen(
