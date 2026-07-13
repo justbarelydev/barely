@@ -9,7 +9,7 @@ export const hasToken = (list, token) => {
 };
 
 /**
- * Convert a truthly/falsy value to a string true/false
+ * Convert a truthy/falsy value to a string true/false
  * @param {*} value
  * @returns {'true' | 'false'}
  */

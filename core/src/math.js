@@ -47,7 +47,7 @@ export const toPage = (position, visible) => Math.round(position / visible);
 /**
  * Get the total number of pages. Round up because half-visible pages count.
  * @param {number} total - Total length of all content
- * @param {*} visible - Length of one page
+ * @param {number} visible - Length of one page
  * @returns {number}
  */
 export const pageCount = (total, visible) => Math.ceil(total / visible);
