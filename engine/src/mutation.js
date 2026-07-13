@@ -124,8 +124,8 @@ function initComponent(node, Registry) {
 	const name = getComponentName(node);
 	if (name && Registry.has(name)) {
 		const blueprint = Registry.get(name);
-		initElement(node, Registry);
 		attachAttrMO(node, blueprint);
+		initElement(node, Registry);
 	}
 }
 

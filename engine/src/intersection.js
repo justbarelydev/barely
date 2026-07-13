@@ -37,8 +37,8 @@ export const initIntersection = (Registry) => {
 
 		// Not lazy — init and attach MO immediately
 		if (!blueprint?.lazy) {
-			initElement(el, Registry);
 			attachAttrMO(el, blueprint);
+			initElement(el, Registry);
 			return;
 		}
 
@@ -46,13 +46,12 @@ export const initIntersection = (Registry) => {
 		const opts = typeof blueprint.lazy === 'object' ? blueprint.lazy : {};
 		observe(
 			el,
-			(entries) => {
+			(entry) => {
 				// Only react when the element enters the viewport
-				const entry = entries.find((e) => e.isIntersecting);
-				if (!entry) return;
+				if (!entry.isIntersecting) return;
 				const blueprint = Registry.get(getComponentName(entry.target));
-				initElement(entry.target, Registry);
 				if (blueprint) attachAttrMO(entry.target, blueprint);
+				initElement(entry.target, Registry);
 			},
 			{ ...opts, once: true },
 		);

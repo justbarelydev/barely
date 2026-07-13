@@ -1,6 +1,6 @@
 {
 	"name": "@justbarely/engine",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Component registry, MO, IO, cleanup, sync, events",
 	"license": "MIT",
 	"files": [

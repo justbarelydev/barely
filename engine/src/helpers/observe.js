@@ -1,3 +1,4 @@
+import { registerCleanup } from './cleanup';
 /**
  * @justbarely/engine - pooled IntersectionObserver and ResizeObserver
  *
@@ -17,9 +18,9 @@ const ROCallbacks = new WeakMap();
 /**
  * observe() — helper for IntersectionObserver with pooling and auto cleanup.
  *
- * One observer per config, shared across elements. Callbacks come back the same
- * as they would with a normal IO, so you can decide what happens when it
- * fires.
+ * One IntersectionObserver per config, shared across elements. The callback
+ * receives a single IntersectionObserverEntry for the element you observed so
+ * you don't need to dig through an array.
  *
  *   once: true — fire once, then stop watching (per-element, not per-pool)
  */
@@ -39,10 +40,9 @@ export const observe = (el, fn, opts = {}) => {
 				for (const entry of entries) {
 					const config = IOEntries.get(entry.target);
 					if (!config) continue;
-					config.fn(entries);
+					config.fn(entry);
 					if (config.once)
 						IOPool.get(config.key)?.unobserve(entry.target);
-					break;
 				}
 			}, ioOpts),
 		);
@@ -59,21 +59,26 @@ export const observe = (el, fn, opts = {}) => {
 };
 
 /**
- * resize() — helper for ResizeObserver with auto cleanup.
+ * resize() — Pooled ResizeObserver, auto-cleanup.
  *
- * Using a single pool here because RO configs are almost always the same.
- * Like observe(), the callback comes back the same as it would from a normal RO.
+ * RO doesn't NEED pooling, but it doesn't hurt! Like elsewhere, cleanup is
+ * auto-registered so you don't need to worry about it.
+ *
+ * The callback receives a single ResizeObserverEntry for the element you're
+ * watching. This is a slight deviation from native, but it's consistent with
+ * observe() and avoids having to dig through arrays.
  */
-export const resize = (el, fn) => {
+export const resize = (root, el, fn) => {
 	const key = 'default';
 
 	// If the element is already being observed, just swap the callback
 	if (ROCallbacks.has(el)) {
 		ROCallbacks.set(el, fn);
-		return () => {
+		registerCleanup(root, () => {
 			ROPool.get(key)?.unobserve(el);
 			ROCallbacks.delete(el);
-		};
+		});
+		return;
 	}
 
 	// If there's no observer yet create it
@@ -83,8 +88,7 @@ export const resize = (el, fn) => {
 			new ResizeObserver((entries) => {
 				for (const entry of entries) {
 					const cb = ROCallbacks.get(entry.target);
-					if (cb) cb(entries);
-					break; // fn called once with full array
+					if (cb) cb(entry);
 				}
 			}),
 		);
@@ -93,8 +97,8 @@ export const resize = (el, fn) => {
 	ROCallbacks.set(el, fn);
 	ROPool.get(key).observe(el);
 
-	return () => {
+	registerCleanup(root, () => {
 		ROPool.get(key)?.unobserve(el);
 		ROCallbacks.delete(el);
-	};
+	});
 };

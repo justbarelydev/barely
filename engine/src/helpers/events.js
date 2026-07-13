@@ -1,14 +1,21 @@
 /**
- * @justbarely/engine - event delegation (pooled)
+ * @justbarely/engine - event delegation
  *
- * Instead of individual event listeners on every element, we use a global
- * listener on the window and a pool of handlers for each event type (click,
- * scroll, etc). This is more performant (less is more am I right?), and it
- * means you don't have to think about removing listeners when their elements
- * are removed.
+ * Instead of individual event listeners on every element, we can use a global
+ * listener on the window and then pool handlers by event type. Why? Because like
+ * the old addage says, "less is more" (literally in this case).
  *
- * Works for all events that you would call with addEventListener (but hey,
- * there's also nothing stopping you from using addEventListener if you want).
+ * It also means you don't have to worry about removing listeners when elements
+ * get removed. Cleanup is auto-registered.
+ *
+ * Bubbling events (click, keydown, etc) share one global listener on the window.
+ *
+ * Non-bubbling events (scroll, focus, etc) just get a direct listener on the
+ * element like they normally would. Barely handles them so you can use listen()
+ * for everything.
+ *
+ * You can always use addEventListener, this is just for convenience.
+ *
  */
 
 import { registerCleanup } from './cleanup';
@@ -30,8 +37,21 @@ const setupGlobalListener = (event, pool) => {
 	});
 };
 
+// Non-bubbling events - direct listener on root, pool ignores them
+// This way you can use listen() everywhere without thinking about bubbling
+const NON_BUBBLING = new Set([
+	'scroll',
+	'focus',
+	'blur',
+	'mouseenter',
+	'mouseleave',
+	'load',
+	'error',
+	'resize',
+]);
+
 /**
- * listen() — one import to rule them all ("them" being your events)
+ * listen() — one function for everything ("them" being your events)
  *
  * If you pass a selector, it uses closest() to scope it to the root so only
  * events from inside the component fire the handler
@@ -40,6 +60,22 @@ const setupGlobalListener = (event, pool) => {
  * alive so any other components using it don't break
  */
 export const listen = (root, event, handler, selector) => {
+	// Ignore pooling if the event doesn't bubble
+	if (NON_BUBBLING.has(event)) {
+		const _handler = selector
+			? (e) => {
+					const target = e.target.closest(selector);
+					if (!target || !root.contains(target)) return;
+					handler(e, target, root);
+				}
+			: (e) => handler(e, root, root);
+
+		root.addEventListener(event, _handler);
+		const cleanup = () => root.removeEventListener(event, _handler);
+		registerCleanup(root, cleanup);
+		return cleanup;
+	}
+
 	const pool = getPool(event);
 	const wrapped = (e) => {
 		const target = e.target.closest(selector);

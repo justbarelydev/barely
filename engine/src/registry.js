@@ -22,7 +22,15 @@ export function register(
 	name,
 	{ watch = [], refract = [], lazy = false } = {},
 ) {
-	const blueprint = { watch, refract, lazy, effects: {}, onMount: null };
+	// Auto-watch refracted attributes
+	const allWatched = [...new Set([...watch, ...refract])];
+	const blueprint = {
+		watch: allWatched,
+		refract,
+		lazy,
+		effects: {},
+		onMount: null,
+	};
 	Registry.set(name, blueprint);
 
 	return {

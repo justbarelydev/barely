@@ -7,8 +7,30 @@ import { hasToken, toBool } from '@justbarely/core';
 import { COMPONENT } from '../constants';
 
 // Attrs
-// Keeping setAttr around in case I want to add functionality later
+/**
+ * Set a single attribute on an element
+ * @param {Element} el
+ * @param {string} key
+ * @param {string} val
+ */
 export const setAttr = (el, key, val) => el.setAttribute(key, val);
+
+/**
+ * Batch-set multiple attributes on an element
+ * Booleans add/remove attributes without values
+ * All other values are set as string literals
+ * @param {Element} el
+ * @param {Record<string, string|boolean|number>} attrs
+ */
+export const setAttrs = (el, attrs) => {
+	for (const [key, val] of Object.entries(attrs)) {
+		if (typeof val === 'boolean') {
+			val ? el.setAttribute(key, '') : el.removeAttribute(key);
+		} else {
+			el.setAttribute(key, val);
+		}
+	}
+};
 
 // Components
 export const getComponentName = (el) => el.getAttribute('data-component');
