@@ -27,5 +27,7 @@ export { avatar, image } from './fields/image';
 // Helpers
 export { pick, randomInt, toList } from './helpers';
 
-// DOM bridge — call init() to scan for [data-random-*] attributes
-export { init } from './browser';
+// TODO: revisit data init story — browser.js auto-inits on import,
+// but init() isn't exported from the package. If programmatic init
+// is needed, either re-export from here (with side-effect risk) or
+// have consumers import browser.js directly.
