@@ -194,5 +194,3 @@ export function init() {
 	populateAll(document.body);
 	startObserver();
 }
-
-init();
