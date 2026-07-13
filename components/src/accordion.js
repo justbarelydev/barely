@@ -41,26 +41,29 @@ import {
 	emit,
 	children,
 	hasMode,
-	ariaBool,
-	updateAria,
+	setAttrs,
 } from '@justbarely/engine';
 
 // Register
 const Accordion = Barely.register('accordion');
 
-// Custom: [data-trigger]/[data-target]
+// ARIA
+const syncAria = (root) => {
+	children(root, '[data-trigger]').forEach((el) =>
+		setAttrs(el, {
+			'aria-expanded': el.hasAttribute('data-open'),
+			'aria-controls': `target-${el.dataset.trigger}`,
+			id: `trigger-${el.dataset.trigger}`,
+		}),
+	);
 
-const ACCORDION_ARIA = {
-	'[data-trigger]': (el) => ({
-		'aria-expanded': ariaBool(el, 'data-open'),
-		'aria-controls': `target-${el.dataset.trigger}`,
-		id: `trigger-${el.dataset.trigger}`,
-	}),
-	'[data-target]': (el) => ({
-		role: 'region',
-		'aria-labelledby': `trigger-${el.dataset.target}`,
-		id: `target-${el.dataset.target}`,
-	}),
+	children(root, '[data-target]').forEach((el) =>
+		setAttrs(el, {
+			role: 'region',
+			'aria-labelledby': `trigger-${el.dataset.target}`,
+			id: `target-${el.dataset.target}`,
+		}),
+	);
 };
 
 // Close all triggers and panels in the custom path
@@ -68,7 +71,7 @@ const closeAll = (root) => {
 	children(root, '[data-open]').forEach((el) =>
 		el.removeAttribute('data-open'),
 	);
-	updateAria(root, ACCORDION_ARIA);
+	syncAria(root);
 };
 
 // Build and emit accordion state
@@ -96,13 +99,13 @@ const onTriggerClick = (e, trigger, root) => {
 		trigger.setAttribute('data-open', '');
 		const panel = children(root, `[data-target="${key}"]`)[0];
 		if (panel) panel.setAttribute('data-open', '');
-		updateAria(root, ACCORDION_ARIA);
+		syncAria(root);
 		emitState(root, [trigger], all);
 	} else {
 		trigger.toggleAttribute('data-open');
 		const panel = children(root, `[data-target="${key}"]`)[0];
 		if (panel) panel.toggleAttribute('data-open');
-		updateAria(root, ACCORDION_ARIA);
+		syncAria(root);
 		emitState(root, children(root, '[data-trigger][data-open]'), all);
 	}
 };
@@ -114,8 +117,9 @@ const onTriggerKeydown = (e, trigger, root) => {
 	}
 };
 
+// Custom: [data-trigger]/[data-target]
 const initCustom = (root) => {
-	updateAria(root, ACCORDION_ARIA);
+	syncAria(root);
 	listen(root, 'click', onTriggerClick, '[data-trigger]');
 	listen(root, 'keydown', onTriggerKeydown, '[data-trigger]');
 };

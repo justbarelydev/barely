@@ -17,7 +17,7 @@
  *   barely:modalchange -> { open: boolean }
  */
 
-import { Barely, listen, emit, children } from '@justbarely/engine';
+import { Barely, listen, emit, children, setAttrs } from '@justbarely/engine';
 
 const Modal = Barely.register('modal');
 
@@ -34,18 +34,26 @@ const waitForAnimation = (el, callback) => {
 			return;
 		}
 
+		// If the element has both transitions and animations, only fire once
+		// (whichever ends first)
+		let fired = false;
+		const once = () => {
+			if (fired) return;
+			fired = true;
+			callback();
+		};
+
 		if (hasTransition)
-			el.addEventListener('transitionend', callback, { once: true });
+			el.addEventListener('transitionend', once, { once: true });
 		if (hasAnimation)
-			el.addEventListener('animationend', callback, { once: true });
+			el.addEventListener('animationend', once, { once: true });
 	});
 };
 
 const show = (root, dialog) => {
 	if (dialog._barelyOpening || dialog._barelyClosing) return;
 	dialog._barelyOpening = true;
-	dialog.removeAttribute('data-closing');
-	dialog.setAttribute('data-opening', '');
+	setAttrs(dialog, { 'data-closing': false, 'data-opening': true });
 	dialog.showModal();
 
 	waitForAnimation(dialog, () => {
@@ -55,8 +63,7 @@ const show = (root, dialog) => {
 		// is committed, causing a visual snap.
 		requestAnimationFrame(() => {
 			dialog._barelyOpening = false;
-			dialog.setAttribute('data-open', '');
-			dialog.removeAttribute('data-opening');
+			setAttrs(dialog, { 'data-open': true, 'data-opening': false });
 			emit(root, 'barely:modalchange', { open: true });
 		});
 	});
@@ -70,8 +77,7 @@ const hide = (root, dialog) => {
 	waitForAnimation(dialog, () => {
 		dialog._barelyClosing = false;
 		dialog.close();
-		dialog.removeAttribute('data-open');
-		dialog.removeAttribute('data-closing');
+		setAttrs(dialog, { 'data-open': false, 'data-closing': false });
 		emit(root, 'barely:modalchange', { open: false });
 	});
 };

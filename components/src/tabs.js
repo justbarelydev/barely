@@ -22,45 +22,46 @@ import {
 	listen,
 	emit,
 	children,
-	updateAria,
-	ariaBool,
+	setAttrs,
 	hasMode,
 } from '@justbarely/engine';
 
 const Tabs = Barely.register('tabs');
 
-const TABS_ARIA = {
-	root: (el) => {
-		const attrs = { role: 'tablist' };
-		if (hasMode(el, 'vertical')) attrs['aria-orientation'] = 'vertical';
-		return attrs;
-	},
-	'[data-trigger]': (el) => ({
-		role: 'tab',
-		'aria-controls': `target-${el.dataset.trigger}`,
-		id: `trigger-${el.dataset.trigger}`,
-		'aria-selected': ariaBool(el, 'data-active'),
-		tabindex: el.hasAttribute('data-active') ? '0' : '-1',
-	}),
-	'[data-target]': (el) => ({
-		role: 'tabpanel',
-		'aria-labelledby': `trigger-${el.dataset.target}`,
-		id: `target-${el.dataset.target}`,
-	}),
+const syncAria = (root) => {
+	const rootAttrs = { role: 'tablist' };
+	if (hasMode(root, 'vertical')) rootAttrs['aria-orientation'] = 'vertical';
+	setAttrs(root, rootAttrs);
+
+	children(root, '[data-trigger]').forEach((el) =>
+		setAttrs(el, {
+			role: 'tab',
+			'aria-selected': el.hasAttribute('data-active'),
+			'aria-controls': `target-${el.dataset.trigger}`,
+			id: `trigger-${el.dataset.trigger}`,
+			tabindex: el.hasAttribute('data-active') ? '0' : '-1',
+		}),
+	);
+
+	children(root, '[data-target]').forEach((el) =>
+		setAttrs(el, {
+			role: 'tabpanel',
+			'aria-labelledby': `trigger-${el.dataset.target}`,
+			id: `target-${el.dataset.target}`,
+		}),
+	);
 };
 
 const activate = (root, key) => {
-	children(root, '[data-trigger]').forEach((el) => {
-		if (el.dataset.trigger === key) el.setAttribute('data-active', '');
-		else el.removeAttribute('data-active');
-	});
+	children(root, '[data-trigger]').forEach((el) =>
+		setAttrs(el, { 'data-active': el.dataset.trigger === key }),
+	);
 
-	children(root, '[data-target]').forEach((el) => {
-		if (el.dataset.target === key) el.setAttribute('data-active', '');
-		else el.removeAttribute('data-active');
-	});
+	children(root, '[data-target]').forEach((el) =>
+		setAttrs(el, { 'data-active': el.dataset.target === key }),
+	);
 
-	updateAria(root, TABS_ARIA);
+	syncAria(root);
 	emit(root, 'barely:tabchange', { active: key });
 };
 
@@ -104,7 +105,7 @@ const onKeydown = (e, tab, root) => {
 };
 
 Tabs.onMount((root) => {
-	updateAria(root, TABS_ARIA);
+	syncAria(root);
 
 	listen(
 		root,
