@@ -36,6 +36,18 @@ export const initElement = (el, Registry) => {
 		forwardSync(el, key, val);
 	});
 
+	// Non-component watch/refract — set initial CSS vars + forward sync
+	const instanceWatch = el.dataset.watch?.split(/\s+/) ?? [];
+	const instanceRefract = el.dataset.refract?.split(/\s+/) ?? [];
+	const instanceAttrs = [...new Set([...instanceWatch, ...instanceRefract])];
+
+	instanceAttrs.forEach((key) => {
+		const val = el.getAttribute(key);
+		if (val === null) return;
+		if (instanceRefract.includes(key)) setCssVar(el, key, val);
+		forwardSync(el, key, val);
+	});
+
 	// If the component uses onMount, register it for teardown
 	if (blueprint.onMount) {
 		const teardown = blueprint.onMount(el);

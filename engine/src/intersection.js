@@ -34,6 +34,7 @@ import { observe } from './helpers/observe';
 export const initIntersection = (Registry) => {
 	children(document, COMPONENT).forEach((el) => {
 		const blueprint = Registry.get(getComponentName(el));
+		if (!blueprint) return;
 
 		// Not lazy — init and attach MO immediately
 		if (!blueprint?.lazy) {
