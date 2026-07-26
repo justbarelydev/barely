@@ -20,7 +20,7 @@ export const Registry = new Map();
  */
 export function register(
 	name,
-	{ watch = [], refract = [], lazy = false } = {},
+	{ watch = [], refract = [], lazy = false, watchChildren = null } = {},
 ) {
 	// Auto-watch refracted attributes
 	const allWatched = [...new Set([...watch, ...refract])];
@@ -28,8 +28,10 @@ export function register(
 		watch: allWatched,
 		refract,
 		lazy,
+		watchChildren,
 		effects: {},
 		onMount: null,
+		onChildUpdate: null,
 	};
 	Registry.set(name, blueprint);
 
@@ -39,6 +41,9 @@ export function register(
 		},
 		onMount: (fn) => {
 			blueprint.onMount = fn;
+		},
+		onChildUpdate: (fn) => {
+			blueprint.onChildUpdate = fn;
 		},
 	};
 }

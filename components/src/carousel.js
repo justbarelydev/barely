@@ -36,12 +36,12 @@ import {
 	children,
 	setAttrs,
 	hasMode,
-	registerCleanup,
 } from '@justbarely/engine';
 import { toInt, clamp, toPage, pageCount } from '@justbarely/core';
 
 export const Carousel = Barely.register('carousel', {
 	refract: ['data-index', 'data-items-to-show', 'data-items-to-scroll'],
+	watchChildren: '[data-track]',
 });
 
 // Build a cache of all child offsets and store it on the component element
@@ -216,19 +216,14 @@ Carousel.onMount((root) => {
 		'[data-nav]',
 	);
 
-	// Rebuild the cache and sync when resizing
+	// Rebuild cache and sync when resizing
 	resize(root, track, () => {
 		cacheOffsets(root, track);
 		syncState();
 	});
 
-	// Rebuild the cache and sync when slides are added or removed
-	const mo = new MutationObserver(() => {
-		cacheOffsets(root, track);
-		syncState();
-	});
-	mo.observe(track, { childList: true });
-	registerCleanup(root, () => mo.disconnect());
+	// Store syncState for onChildrenUpdate
+	root._syncState = syncState;
 
 	// Init
 	root._initing = true;
@@ -254,7 +249,7 @@ Carousel.onMount((root) => {
 	root._initing = false;
 });
 
-// Rebuild the cache when [data-items-to-show] changes
+// Rebuild cache when [data-items-to-show] changes
 Carousel.onEffect('data-items-to-show', (root) => {
 	const track = root._track;
 	if (!track) return;
@@ -292,4 +287,12 @@ Carousel.onEffect('data-index', (root, value) => {
 	track.scrollTo({
 		left: scrollTarget(root, track, index),
 	});
+});
+
+// Rebuild cache when children change
+Carousel.onChildUpdate((root) => {
+	const track = root._track;
+	if (!track) return;
+	cacheOffsets(root, track);
+	root._syncState?.();
 });

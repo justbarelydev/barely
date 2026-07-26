@@ -54,6 +54,20 @@ export const initElement = (el, Registry) => {
 		if (typeof teardown === 'function') registerCleanup(el, teardown);
 	}
 
+	// Set up childList MO if the component declared a watchChildren selector
+	// Set `true` to watch all children
+	if (blueprint.watchChildren && blueprint.onChildUpdate) {
+		const target =
+			blueprint.watchChildren === true
+				? el
+				: el.querySelector(blueprint.watchChildren);
+		if (target) {
+			const mo = new MutationObserver(() => blueprint.onChildUpdate(el));
+			mo.observe(target, { childList: true });
+			registerCleanup(el, () => mo.disconnect());
+		}
+	}
+
 	// Add [data-ready] so you can do cool transitions and stuff
 	el.setAttribute('data-ready', '');
 
