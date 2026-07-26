@@ -1,4 +1,5 @@
 [data-component='carousel'] {
+	--gap: 1rem;
 	position: relative;
 	visibility: hidden;
 	opacity: 0;
@@ -10,21 +11,15 @@
 }
 
 [data-component='carousel'] [data-track] {
-	--gap: 1rem;
-	--gap-count: calc(var(--items-to-show, 1) - 1);
-	--gap-total: calc(var(--gap) * var(--gap-count));
-	--item-width: calc((100% - var(--gap-total)) / var(--items-to-show, 1));
-
 	display: flex;
 	gap: var(--gap);
 	align-items: start;
 	overflow-x: auto;
 	overscroll-behavior-x: contain;
+	scroll-behavior: smooth;
 	scroll-snap-type: x mandatory;
 	scrollbar-width: none;
 	-webkit-overflow-scrolling: touch;
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE and Edge */
 
 	&::-webkit-scrollbar {
 		display: none;
@@ -32,6 +27,17 @@
 
 	& > * {
 		scroll-snap-align: start;
+		flex: 0 0 auto;
+	}
+}
+
+/* Fixed-width items when items-to-show is set */
+[data-component='carousel'][data-items-to-show] [data-track] {
+	--gap-count: calc(var(--items-to-show, 1) - 1);
+	--gap-total: calc(var(--gap) * var(--gap-count));
+	--item-width: calc((100% - var(--gap-total)) / var(--items-to-show, 1));
+
+	& > * {
 		flex: 1 0 var(--item-width);
 	}
 }
@@ -43,23 +49,8 @@
 	pointer-events: none;
 }
 
-/* Default arrow positioning — override in theme */
-[data-component='carousel'] [data-nav='prev'],
-[data-component='carousel'] [data-nav='next'] {
-	position: absolute;
-}
-
-[data-component='carousel'] [data-nav='prev'] {
-	left: 0;
-}
-
-[data-component='carousel'] [data-nav='next'] {
-	right: 0;
-}
-
 /*
  * Screen-reader-only live region for page announcements.
- *
  * TODO: figure out attr or class for theme for sr-only (base.css probably)
  */
 [data-component='carousel'] [aria-live] {
@@ -70,4 +61,16 @@
 	clip-path: inset(50%);
 	white-space: nowrap;
 	border: 0;
+}
+
+/* Center mode */
+[data-component='carousel'][data-mode~='center'] [data-track] > * {
+	scroll-snap-align: center;
+}
+
+/* Turn off smooth scrolling for prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+	[data-component='carousel'] [data-track] {
+		scroll-behavior: auto;
+	}
 }
