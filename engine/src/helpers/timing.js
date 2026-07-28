@@ -1,57 +1,35 @@
 /**
- * Throttle - rAF-based throttle
- * Call fn at most once per frame - provide `ms` to extend time between calls.
- *
- * The cool thing here is that requestAnimationFrame is already a throttle in
- * and of itself, so that's the default
- *
- * @param {Function} fn
- * @param {number} ms
- * @returns {Function}
+ * @justbarely/engine - timing helpers
  */
-export const throttle = (fn, ms) => {
-	if (!ms) {
-		let id;
-		const t = (...args) => {
-			if (id) return;
-			id = requestAnimationFrame(() => {
-				id = null;
-				fn(...args);
-			});
-		};
-		t.cancel = () => {
-			cancelAnimationFrame(id);
-			id = null;
-		};
-		return t;
-	}
-
-	let last = 0;
-	const t = (...args) => {
-		const now = performance.now();
-		if (now - last < ms) return;
-		last = now;
-		fn(...args);
-	};
-	t.cancel = () => {
-		last = 0;
-	};
-	return t;
-};
 
 /**
- * Debounce - call fn after `ms` of inactivity
- * @param {Function} fn
- * @param {number} [ms=150]
+ * Wait for a CSS transition or animation to finish, then callback.
+ * If the element has no transition/animation, calls immediately (after one rAF).
+ *
+ * @param {Element} el
+ * @param {Function} callback
  */
-export const debounce = (fn, ms = 150) => {
-	let id;
-	const debounced = (...args) => {
-		clearTimeout(id);
-		id = setTimeout(() => fn(...args), ms);
-	};
-	debounced.cancel = () => {
-		clearTimeout(id);
-	};
-	return debounced;
+export const waitForAnimation = (el, callback) => {
+	requestAnimationFrame(() => {
+		const style = getComputedStyle(el);
+		const hasTransition = style.transitionDuration !== '0s';
+		const hasAnimation = style.animationDuration !== '0s';
+
+		if (!hasTransition && !hasAnimation) {
+			callback();
+			return;
+		}
+
+		let fired = false;
+		const once = () => {
+			if (fired) return;
+			fired = true;
+			callback();
+		};
+
+		if (hasTransition)
+			el.addEventListener('transitionend', once, { once: true });
+		if (hasAnimation)
+			el.addEventListener('animationend', once, { once: true });
+	});
 };

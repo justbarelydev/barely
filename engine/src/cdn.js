@@ -1,5 +1,5 @@
 /**
- * @justbarely/engine — CDN entry point
+ * @justbarely/engine - CDN entry point
  *
  * Auto-inits on script load.
  * For <script src="..."> usage - no manual init() call needed

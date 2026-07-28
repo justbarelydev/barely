@@ -1,22 +1,14 @@
 /**
  * @justbarely/engine - attribute helpers
- * These are just thin wrappers for dealing with attributes
+ * Thin wrappers for dealing with attributes
  */
 
-import { hasToken, toBool } from '@justbarely/core';
+import { hasToken } from '@justbarely/core';
 import { COMPONENT } from '../constants';
 
 // Attrs
 /**
- * Set a single attribute on an element
- * @param {Element} el
- * @param {string} key
- * @param {string} val
- */
-export const setAttr = (el, key, val) => el.setAttribute(key, val);
-
-/**
- * Batch-set multiple attributes on an element
+ * Update one or more attributes on an element
  * Booleans add/remove attributes without values
  * All other values are set as string literals
  * @param {Element} el
@@ -47,6 +39,3 @@ export const setCssVar = (el, name, val) =>
 
 // Checks if a space-separated data-mode flag is present
 export const hasMode = (el, mode) => hasToken(el.dataset.mode, mode);
-
-// Presence check → 'true' / 'false' for ARIA booleans
-export const ariaBool = (el, attr) => toBool(el.hasAttribute(attr));

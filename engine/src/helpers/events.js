@@ -15,7 +15,6 @@
  * for everything.
  *
  * You can always use addEventListener, this is just for convenience.
- *
  */
 
 import { registerCleanup } from './cleanup';
@@ -51,15 +50,24 @@ const NON_BUBBLING = new Set([
 ]);
 
 /**
- * listen() — one function for everything ("them" being your events)
+ * listen() - Handy little drop-in addEventListener replacement with auto-cleanup
+ * and optional delegation. One function for all events.
  *
- * If you pass a selector, it uses closest() to scope it to the root so only
- * events from inside the component fire the handler
+ *   listen(el, 'click', fn): direct on el (pooled, gated by contains)
+ *   listen(el, ['mouseenter', 'focus'], fn): multiple events
+ *   listen(root, 'click', fn, '[data-nav]'): delegated, scoped to root
  *
- * Cleanup will remove the handler from the pool but it keeps the global listener
- * alive so any other components using it don't break
+ * - Bubbling events share one global listener on the window per event type
+ * - Non-bubbling events attach directly to root
+ * - Cleanup runs automatically when root leaves the DOM
  */
 export const listen = (root, event, handler, selector) => {
+	// Allow array of events: listen(root, ['mouseenter', 'focus'], fn)
+	if (Array.isArray(event)) {
+		const cleanupFns = event.map((e) => listen(root, e, handler, selector));
+		return () => cleanupFns.forEach((fn) => fn());
+	}
+
 	// Ignore pooling if the event doesn't bubble
 	if (NON_BUBBLING.has(event)) {
 		const _handler = selector
@@ -77,19 +85,29 @@ export const listen = (root, event, handler, selector) => {
 	}
 
 	const pool = getPool(event);
-	const wrapped = (e) => {
-		const target = e.target.closest(selector);
-		if (!target || !root.contains(target)) return;
 
-		// Don't handle events from nested components (only when root IS one)
-		if (root.getAttribute) {
-			const owner = target.closest('[data-component]');
-			if (owner && owner !== root) return;
-		}
+	let _handler;
+	if (selector) {
+		// If listen() is called with a selector delegate (scoped to root)
+		_handler = (e) => {
+			const target = e.target.closest(selector);
+			if (!target || !root.contains(target)) return;
 
-		handler(e, target, root);
-	};
-	const _handler = selector ? wrapped : handler;
+			// Don't handle events from nested components (only when root IS one)
+			if (root.getAttribute) {
+				const owner = target.closest('[data-component]');
+				if (owner && owner !== root) return;
+			}
+
+			handler(e, target, root);
+		};
+	} else {
+		// Otherwise just scope to root
+		_handler = (e) => {
+			if (!root.contains(e.target)) return;
+			handler(e, root);
+		};
+	}
 
 	pool.add(_handler);
 
