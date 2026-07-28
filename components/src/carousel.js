@@ -32,12 +32,11 @@ import {
 	listen,
 	resize,
 	emit,
-	debounce,
 	children,
 	setAttrs,
 	hasMode,
 } from '@justbarely/engine';
-import { toInt, clamp, toPage, pageCount } from '@justbarely/core';
+import { toInt, clamp, toPage, pageCount, debounce } from '@justbarely/core';
 
 export const Carousel = Barely.register('carousel', {
 	refract: ['data-index', 'data-items-to-show', 'data-items-to-scroll'],

@@ -17,38 +17,16 @@
  *   barely:modalchange -> { open: boolean }
  */
 
-import { Barely, listen, emit, children, setAttrs } from '@justbarely/engine';
+import {
+	Barely,
+	listen,
+	emit,
+	children,
+	setAttrs,
+	waitForAnimation,
+} from '@justbarely/engine';
 
 const Modal = Barely.register('modal');
-
-const waitForAnimation = (el, callback) => {
-	// Defer one frame so the browser computes styles from the attribute
-	// change that just happened (data-opening / data-closing).
-	requestAnimationFrame(() => {
-		const style = getComputedStyle(el);
-		const hasTransition = style.transitionDuration !== '0s';
-		const hasAnimation = style.animationDuration !== '0s';
-
-		if (!hasTransition && !hasAnimation) {
-			callback();
-			return;
-		}
-
-		// If the element has both transitions and animations, only fire once
-		// (whichever ends first)
-		let fired = false;
-		const once = () => {
-			if (fired) return;
-			fired = true;
-			callback();
-		};
-
-		if (hasTransition)
-			el.addEventListener('transitionend', once, { once: true });
-		if (hasAnimation)
-			el.addEventListener('animationend', once, { once: true });
-	});
-};
 
 const show = (root, dialog) => {
 	if (dialog._barelyOpening || dialog._barelyClosing) return;

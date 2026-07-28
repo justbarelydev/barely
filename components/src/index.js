@@ -3,5 +3,6 @@ import './tabs';
 import './accordion';
 import './modal';
 import './carousel';
+import './tooltip';
 
 Barely.init();
