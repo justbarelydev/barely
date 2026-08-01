@@ -1,0 +1,20 @@
+/**
+ * @justbarely/components — Popover
+ */
+
+[data-popover] {
+	position: absolute;
+	z-index: 100;
+	opacity: 0;
+}
+
+/* Opening / open: fade in */
+[data-popover][data-opening],
+[data-popover][data-open] {
+	opacity: 1;
+}
+
+/* Closing: fade out, then element is removed from DOM */
+[data-popover][data-closing] {
+	opacity: 0;
+}
