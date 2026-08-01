@@ -22,9 +22,8 @@
  */
 
 import { COMPONENT } from './constants';
-import { getComponentName } from './helpers/attr';
-import { children } from './helpers/children';
-import { initElement } from './init';
+import { getComponentName, children } from './helpers/elements';
+import { initElement } from './registry';
 import { attachAttrMO } from './mutation';
 import { observe } from './helpers/observe';
 

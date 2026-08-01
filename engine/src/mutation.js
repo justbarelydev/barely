@@ -1,20 +1,20 @@
 /**
  * @justbarely/engine - MutationObserver
  *
- * Since we are using MO for the "state updates", we need to be efficient about it:
+ * Since we are using MO for state updates, we need to be efficient about it:
  *
- * - One global MO for childList (dynamically added/removed elements)
  * - Per-component MOs for attribute changes (scoped to each component root)
+ * - One global MO for childList (dynamically added/removed elements)
  *
- * Each component MO uses attributeFilter to only update when the reported
+ * Each component MO uses attributeFilter to update only when the reported
  * attributes change, which is performant and cool.
  */
 
 import { COMPONENT, SYNC } from './constants';
 import { bindSyncElement, forwardSync } from './helpers/sync';
-import { getComponentName, setCssVar } from './helpers/attr';
-import { children } from './helpers/children';
-import { initElement } from './init';
+import { getComponentName, children } from './helpers/elements';
+import { initElement, refractValue } from './registry';
+import { refract } from './helpers/attr';
 import { runCleanup } from './helpers/cleanup';
 import { emit } from './helpers/emit';
 
@@ -24,7 +24,7 @@ const _counts = new WeakMap();
 
 /**
  * Catch infinite loops in onEffect - 25 writes to the same attr in one frame
- * (~16ms) and we eject and log the culprit.
+ * and we bail and log the culprit.
  */
 const isRunaway = (el, attr) => {
 	const bucket = (performance.now() / 16) | 0;
@@ -55,15 +55,14 @@ const isRunaway = (el, attr) => {
 const AttrObservers = new WeakMap();
 
 /**
- * This factory pumps out per-component MOs that only watch the attrs that this
+ * This factory pumps out per-component MOs that only watch the attrs that the
  * component cares about.
  */
 function createAttrObserver(blueprint) {
 	return new MutationObserver((mutations) => {
 		for (const mutation of mutations) {
-			/** Playing defense: refract writes to el.style.setProperty, which
-			 *  mutates the `style` attribute. If someone puts `style` in
-			 *  watch or refract, this prevents the infinite loop. */
+			/** Refract writes to the `style` attribute so if someone puts `style`
+			 * in watch or refract, this blocks to prevent infinite loops */
 			if (mutation.attributeName === 'style') {
 				console.warn(
 					'Ignoring mutations to the [style] attr to prevent infinite loops',
@@ -76,12 +75,23 @@ function createAttrObserver(blueprint) {
 			if (newValue === oldValue) continue;
 			if (isRunaway(target, attributeName)) continue;
 
-			// target is the component root — observed directly
+			/**
+			 * Convert data-attr values to CSS vars if refract is defined in
+			 * the blueprint, and hook it up to onRefract lifecycle method
+			 */
 			if (
 				blueprint.refract?.includes(attributeName) ||
 				target._barelyRefract?.includes(attributeName)
-			)
-				setCssVar(target, attributeName, newValue);
+			) {
+				refract(
+					target,
+					attributeName,
+					blueprint.refract?.includes(attributeName)
+						? refractValue(blueprint, attributeName, newValue)
+						: newValue,
+				);
+			}
+
 			if (blueprint.effects[attributeName])
 				blueprint.effects[attributeName](target, newValue, oldValue);
 			forwardSync(target, attributeName, newValue);
@@ -218,7 +228,7 @@ export const initMutation = (Registry) => {
 			refract.forEach((attr) => {
 				const val = el.getAttribute(attr);
 				if (val != null) {
-					setCssVar(el, attr, val);
+					refract(el, attr, val);
 					forwardSync(el, attr, val);
 				}
 			});
@@ -237,7 +247,7 @@ export const initMutation = (Registry) => {
 				refract.forEach((attr) => {
 					const val = target.getAttribute(attr);
 					if (val != null) {
-						setCssVar(target, attr, val);
+						refract(target, attr, val);
 						forwardSync(target, attr, val);
 					}
 				});

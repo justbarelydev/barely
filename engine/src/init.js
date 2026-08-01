@@ -1,75 +1,20 @@
 /**
- * @justbarely/engine - component initialization
+ * @justbarely/engine - engine initialization
  *
- * This runs when a component first appears in the DOM - either on page load
- * or when it's scrolled into view if lazy: true - and does the following:
- * 	1. Fires onEffect for each watched attribute with a value
- *  2. Adds CSS vars to the inline style attr for refracted attributes
- *  3. Forwards watched attrs and refracted CSS vars to all data-sync subscribers
- * 	4. Calls onMount() if defined and registers it for teardown
- *  5. Sets [data-ready] on the root element (data-component)
- *
- * mutation.js handles dynamically added elements
- * intersection.js handles lazy components
+ * Kicks off MutationObserver and IntersectionObserver for all registered
+ * components. Called once by Barely.init().
  */
 
-import { forwardSync } from './helpers/sync';
-import { registerCleanup } from './helpers/cleanup';
-import { getComponentName, setCssVar } from './helpers/attr';
-import { emit } from './helpers/emit';
+import { Registry } from './registry';
+import { initMutation } from './mutation';
+import { initIntersection } from './intersection';
 
-export const initElement = (el, Registry) => {
-	const blueprint = Registry.get(getComponentName(el));
-	if (!blueprint) return;
+let initialized = false;
 
-	blueprint.watch.forEach((key) => {
-		const val = el.getAttribute(key);
-		if (val === null) return;
+export function init() {
+	if (initialized || Registry.size === 0) return;
+	initialized = true;
 
-		// Set CSS var inline style if refract is populated
-		if (blueprint.refract?.includes(key)) setCssVar(el, key, val);
-
-		// Effect gets null for oldValue on first run
-		if (blueprint.effects[key]) blueprint.effects[key](el, val, null);
-
-		// Update attr and CSS var on subscribers
-		forwardSync(el, key, val);
-	});
-
-	// Non-component watch/refract — set initial CSS vars + forward sync
-	const instanceWatch = el.dataset.watch?.split(/\s+/) ?? [];
-	const instanceRefract = el.dataset.refract?.split(/\s+/) ?? [];
-	const instanceAttrs = [...new Set([...instanceWatch, ...instanceRefract])];
-
-	instanceAttrs.forEach((key) => {
-		const val = el.getAttribute(key);
-		if (val === null) return;
-		if (instanceRefract.includes(key)) setCssVar(el, key, val);
-		forwardSync(el, key, val);
-	});
-
-	// If the component uses onMount, register it for teardown
-	if (blueprint.onMount) {
-		const teardown = blueprint.onMount(el);
-		if (typeof teardown === 'function') registerCleanup(el, teardown);
-	}
-
-	// Set up childList MO if the component declared a watchChildren selector
-	// Set `true` to watch all children
-	if (blueprint.watchChildren && blueprint.onChildUpdate) {
-		const target =
-			blueprint.watchChildren === true
-				? el
-				: el.querySelector(blueprint.watchChildren);
-		if (target) {
-			const mo = new MutationObserver(() => blueprint.onChildUpdate(el));
-			mo.observe(target, { childList: true });
-			registerCleanup(el, () => mo.disconnect());
-		}
-	}
-
-	// Add [data-ready] so you can do cool transitions and stuff
-	el.setAttribute('data-ready', '');
-
-	emit(el, 'barely:mount', { name: getComponentName(el) });
-};
+	initMutation(Registry);
+	initIntersection(Registry);
+}
