@@ -1,3 +1,7 @@
+/**
+ * @justbarely/components - Carousel (structural styles only)
+ */
+
 [data-component='carousel'] {
 	--gap: 1rem;
 	position: relative;
@@ -42,7 +46,7 @@
 	}
 }
 
-/* Arrow visibility driven by data attributes — no JS needed after state is set */
+/* Arrow visibility driven by data attributes - no JS needed after state is set */
 [data-component='carousel']:not([data-can-prev]) [data-nav='prev'],
 [data-component='carousel']:not([data-can-next]) [data-nav='next'] {
 	visibility: hidden;

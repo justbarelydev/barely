@@ -1,30 +1,35 @@
 /**
- * @justbarely/components — Carousel
+ * @justbarely/components - Carousel
  *
- *	<div data-component="carousel" data-items-to-show="3.5" data-mode="center">
- *		<button data-nav="prev">←</button>
- *		<div data-track>
- *			<button>Slide 1</button>
- *			<button>Slide 2</button>
- *		</div>
- *		<button data-nav="next">→</button>
- *	</div>
+ * Native scroll-snap: browser handles swipe, momentum, scrollbar.
+ * Barely adds arrow navigation, page tracking, responsive item sizing, ARIA.
  *
- * State attrs (on root):
- *   data-can-prev, data-can-next — arrow visibility (boolean)
- *   data-index — current item index (0-based). Set from anywhere for go-to
+ *   <div data-component="carousel" data-items-to-show="3" data-mode="center">
+ *     <button data-nav="prev">←</button>
+ *     <div data-track>
+ *       <button>Slide 1</button>
+ *       <button>Slide 2</button>
+ *     </div>
+ *     <button data-nav="next">→</button>
+ *   </div>
  *
  * Config attrs:
- *   data-items-to-show   — items visible at once (default 1, refracted to --items-to-show)
- *   data-items-to-scroll — items to advance per arrow click (default 1)
- *   data-mode="center"   — active item is centered in the carousel
+ *   data-items-to-show   - items visible at once (default: 1)
+ *   data-items-to-scroll - items to advance per arrow click (default: 1)
+ *   data-mode="center"   - active item centered in the carousel
+ *
+ * State attrs (on root):
+ *   data-index     - current item index (0-based)
+ *   data-page      - current page (0-based, computed from scroll)
+ *   data-total     - total pages
+ *   data-can-prev  - previous page available (boolean)
+ *   data-can-next  - next page available (boolean)
  *
  * Events:
  *   barely:pagechange -> { page, total }
  *
- * Notes:
- * - update `--gap` CSS variable when using items-to-show or it won't
- *   calculate/update properly
+ * Note: update the --gap CSS variable to match your track gap for accurate
+ * pagination calculations.
  */
 
 import {

@@ -1,17 +1,17 @@
 /**
- * @justbarely/components — Modal
+ * @justbarely/components - Modal
  *
- * Native <dialog> - The browser handles backdrop, Esc, focus trap, and ARIA for
- * us. Barely adds data-open/data-closing for CSS transitions and overlay click.
+ * Native <dialog> The browser handles backdrop, Esc, focus trap, and ARIA.
+ * Barely adds data-open/data-closing for CSS transitions and overlay click.
  *
- *	<button data-trigger="newsletter">Subscribe</button>
- *	<dialog data-target="newsletter">
- *		<h2>Stay in touch</h2>
- *		<form method="dialog">
- *			<button value="cancel">No thanks</button>
- *			<button value="yes">Subscribe</button>
- *		</form>
- *	</dialog>
+ *   <button data-trigger="newsletter">Subscribe</button>
+ *   <dialog data-target="newsletter">
+ *     <h2>Stay in touch</h2>
+ *     <form method="dialog">
+ *       <button value="cancel">No thanks</button>
+ *       <button value="yes">Subscribe</button>
+ *     </form>
+ *   </dialog>
  *
  * Events:
  *   barely:modalchange -> { open: boolean }
@@ -62,13 +62,13 @@ const hide = (root, dialog) => {
 
 Modal.onMount((root) => {
 	children(root, 'dialog[data-target]').forEach((dialog) => {
-		// Esc key — intercept before the browser closes the dialog
+		// Esc key - intercept before the browser closes the dialog
 		dialog.addEventListener('cancel', (e) => {
 			e.preventDefault();
 			hide(root, dialog);
 		});
 
-		// Form submit (method="dialog") — intercept before native close
+		// Form submit (method="dialog") - intercept before native close
 		const form = dialog.querySelector('form[method="dialog"]');
 		if (form) {
 			form.addEventListener('submit', (e) => {

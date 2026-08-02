@@ -1,5 +1,5 @@
 /**
- * @justbarely/components — Accordion
+ * @justbarely/components - Accordion
  *
  * Native: <details>/<summary>
  * Add the same [name] attr to every <details> element for exclusive.
@@ -30,6 +30,9 @@
  *		<button data-trigger="a1" data-open>Section 1</button>
  *		<div data-target="a1" data-open>Content 1</div>
  *	</div>
+ *
+ * Config attrs:
+ *   data-mode - "exclusive" (one open at a time) | "horizontal" (side-by-side)
  *
  * Events:
  *   barely:accordionchange -> { open: number[], keys: string[] }
@@ -124,7 +127,7 @@ const initCustom = (root) => {
 	listen(root, 'keydown', onTriggerKeydown, '[data-trigger]');
 };
 
-// Native: <details>/<summary> — browser handles toggle, name attr for exclusive
+// Native: <details>/<summary> - browser handles toggle, name attr for exclusive
 const initNative = (root) => {
 	const items = children(root, 'details');
 

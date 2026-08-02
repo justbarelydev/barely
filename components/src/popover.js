@@ -12,18 +12,18 @@
  *   </button>
  *
  *   <!-- <template> for full HTML -->
- *   <button data-component="popover" data-target="menu">
+ *   <button data-component="popover" data-trigger="menu">
  *     Actions
  *   </button>
- *   <template data-target="menu">
+ *   <template data-popover="menu">
  *     <div role="dialog" aria-label="Menu">...</div>
  *   </template>
  *
  *   <!-- existing element (hidden by default) -->
- *   <button data-component="popover" data-target="custom">
+ *   <button data-component="popover" data-trigger="custom">
  *     Open
  *   </button>
- *   <div data-popover data-target="custom" hidden>...</div>
+ *   <div data-popover="custom" hidden>...</div>
  *
  * Config attrs:
  *   data-mode="persistent" - no light dismiss, must use data-close
@@ -68,26 +68,23 @@ const isOpen = (target) =>
  * whether Barely owns (generates) it (if owned it will remove on hide)
  */
 const getTarget = (root) => {
-	const targetKey = root.dataset.target;
+	const targetKey = root.dataset.trigger;
 
 	if (targetKey) {
 		// Template: clone
 		const template = document.querySelector(
-			`template[data-target="${targetKey}"]`,
+			`template[data-popover="${targetKey}"]`,
 		);
 		if (template) {
 			const clone = template.content.cloneNode(true).firstElementChild;
 			if (clone) {
-				clone.setAttribute('data-popover', '');
-				clone.setAttribute('data-target', targetKey);
+				clone.setAttribute('data-popover', targetKey);
 				return { target: clone, owns: true };
 			}
 		}
 
 		// Live element: use
-		const live = document.querySelector(
-			`[data-popover][data-target="${targetKey}"]`,
-		);
+		const live = document.querySelector(`[data-popover="${targetKey}"]`);
 		if (live) return { target: live, owns: false };
 	}
 

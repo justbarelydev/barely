@@ -1,16 +1,16 @@
 /**
- * @justbarely/components — Tabs
+ * @justbarely/components - Tabs
  *
- *	<div data-component="tabs">
- *		<button data-trigger="tab1" data-active>Tab 1</button>
- *		<button data-trigger="tab2">Tab 2</button>
- *		<div data-target="tab1" data-active>Content 1</div>
- *		<div data-target="tab2">Content 2</div>
- *	</div>
+ *   <div data-component="tabs">
+ *     <button data-trigger="tab1" data-active>Tab 1</button>
+ *     <button data-trigger="tab2">Tab 2</button>
+ *     <div data-target="tab1" data-active>Content 1</div>
+ *     <div data-target="tab2">Content 2</div>
+ *   </div>
  *
- * data-mode:
- *   "vertical" — tabs on the left, panels on the right. Keyboard nav
- *                switches to ArrowUp / ArrowDown.
+ * Config attrs:
+ *   data-mode="vertical" - tabs on left, panels on right
+ *   	- for panels on left/tabs on right use CSS flex-direction: row-reverse
  *
  * Events:
  *   barely:tabchange -> { active: key }
