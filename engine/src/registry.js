@@ -19,14 +19,14 @@ export const Registry = new Map();
  * Register components to hook them into the engine and to get those
  * sweet sweet lifecycle methods
  *
- * onMount: fires immediately or when scrolled into view if lazy:true
+ * onMount: fires immediately (or on first intersection if element has [data-lazy])
  * onEffect: fires on watched attribute changes
  * onRefract: transform attribute values before they hit CSS vars
  * refract: copies attribute values to inline CSS variables
  */
 export function register(
 	name,
-	{ watch = [], refract = [], lazy = false, watchChildren = null } = {},
+	{ watch = [], refract = [], watchChildren = null } = {},
 ) {
 	// Auto-watch refracted attributes
 	const allWatched = [...new Set([...watch, ...refract])];
@@ -34,7 +34,6 @@ export function register(
 		watch: allWatched,
 		refract,
 		refractMap: {},
-		lazy,
 		watchChildren,
 		effects: {},
 		onMount: null,
@@ -124,7 +123,7 @@ export const initElement = (el, Registry) => {
 		}
 	}
 
-	// Anti-FOUC — mark ready after all init work is done
+	// Anti-FOUC - mark ready after all init work is done
 	el.setAttribute('data-ready', '');
 
 	emit(el, 'barely:mount', { name: getComponentName(el) });

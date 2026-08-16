@@ -1,119 +1,54 @@
 /**
- * @justbarely/engine - event delegation
+ * @justbarely/engine - event listeners
  *
- * Instead of individual event listeners on every element, we can use a global
- * listener on the window and then pool handlers by event type. Why? Because like
- * the old addage says, "less is more" (literally in this case).
- *
- * It also means you don't have to worry about removing listeners when elements
- * get removed. Cleanup is auto-registered.
- *
- * Bubbling events (click, keydown, etc) share one global listener on the window.
- *
- * Non-bubbling events (scroll, focus, etc) just get a direct listener on the
- * element like they normally would. Barely handles them so you can use listen()
- * for everything.
- *
- * You can always use addEventListener, this is just for convenience.
+ * You can always use addEventListener, but this is more convenient.
  */
 
 import { registerCleanup } from './cleanup';
 
-const pools = new Map(); // store event handler sets by event type
-const activeGlobals = new Set(); // check which events are already on window
-
-// Get or create the handler set for a given event type
-const getPool = (event) => {
-	if (!pools.has(event)) pools.set(event, new Set());
-	return pools.get(event);
-};
-
-// Create the one global listener on window for this event type
-const setupGlobalListener = (event, pool) => {
-	activeGlobals.add(event);
-	window.addEventListener(event, (e) => {
-		for (const handler of pool) handler(e);
-	});
-};
-
-// Non-bubbling events - direct listener on root, pool ignores them
-// This way you can use listen() everywhere without thinking about bubbling
-const NON_BUBBLING = new Set([
-	'scroll',
-	'focus',
-	'blur',
-	'mouseenter',
-	'mouseleave',
-	'load',
-	'error',
-	'resize',
-]);
-
 /**
- * listen() - Handy little drop-in addEventListener replacement with auto-cleanup
- * and optional delegation. One function for all events.
+ * Handy little addEventListener replacement with auto-cleanup and optional
+ * selector delegation.
  *
- *   listen(el, 'click', fn): direct on el (pooled, gated by contains)
+ *   listen(el, 'click', fn): direct on el
  *   listen(el, ['mouseenter', 'focus'], fn): multiple events
  *   listen(root, 'click', fn, '[data-nav]'): delegated, scoped to root
  *
- * - Bubbling events share one global listener on the window per event type
- * - Non-bubbling events attach directly to root
- * - Cleanup runs automatically when root leaves the DOM
+ * - Attaches directly to the root, so it's garbage collected with it
+ * - Returns an off() function for manual cleanup
+ * - Non-bubbling events (scroll, focus, mouseenter) fire only on root itself
+ * - Nested component events are blocked from triggering outer component handlers
  */
 export const listen = (root, event, handler, selector) => {
-	// Allow array of events: listen(root, ['mouseenter', 'focus'], fn)
+	if (!root) {
+		console.warn('[barely] listen(): no root element provided for', event);
+		return () => {};
+	}
+
+	// Allow array of events because addEventListener didn't and it should've
 	if (Array.isArray(event)) {
-		const cleanupFns = event.map((e) => listen(root, e, handler, selector));
-		return () => cleanupFns.forEach((fn) => fn());
+		const offs = event.map((e) => listen(root, e, handler, selector));
+		return () => offs.forEach((off) => off());
 	}
 
-	// Ignore pooling if the event doesn't bubble
-	if (NON_BUBBLING.has(event)) {
-		const _handler = selector
-			? (e) => {
-					const target = e.target.closest(selector);
-					if (!target || !root.contains(target)) return;
-					handler(e, target, root);
+	const _handler = selector
+		? (e) => {
+				const target = e.target.closest(selector);
+				if (!target || !root.contains(target)) return;
+
+				// Don't handle events from nested components (when root IS one)
+				if (root.getAttribute) {
+					const owner = target.closest('[data-component]');
+					if (owner && owner !== root) return;
 				}
-			: (e) => handler(e, root, root);
 
-		root.addEventListener(event, _handler);
-		const cleanup = () => root.removeEventListener(event, _handler);
-		registerCleanup(root, cleanup);
-		return cleanup;
-	}
-
-	const pool = getPool(event);
-
-	let _handler;
-	if (selector) {
-		// If listen() is called with a selector delegate (scoped to root)
-		_handler = (e) => {
-			const target = e.target.closest(selector);
-			if (!target || !root.contains(target)) return;
-
-			// Don't handle events from nested components (only when root IS one)
-			if (root.getAttribute) {
-				const owner = target.closest('[data-component]');
-				if (owner && owner !== root) return;
+				handler(e, target, root);
 			}
+		: (e) => handler(e, root);
 
-			handler(e, target, root);
-		};
-	} else {
-		// Otherwise just scope to root
-		_handler = (e) => {
-			if (!root.contains(e.target)) return;
-			handler(e, root);
-		};
-	}
+	root.addEventListener(event, _handler);
 
-	pool.add(_handler);
-
-	if (!activeGlobals.has(event)) setupGlobalListener(event, pool);
-
-	const cleanup = () => pool.delete(_handler);
+	const cleanup = () => root.removeEventListener(event, _handler);
 	registerCleanup(root, cleanup);
 	return cleanup;
 };

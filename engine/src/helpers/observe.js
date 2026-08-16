@@ -1,4 +1,3 @@
-import { registerCleanup } from './cleanup';
 /**
  * @justbarely/engine - pooled IntersectionObserver and ResizeObserver
  *
@@ -9,6 +8,8 @@ import { registerCleanup } from './cleanup';
  * Less observers, MAXIMUM PERFORMANCE.
  */
 
+import { registerCleanup } from './cleanup';
+
 const IOPool = new Map(); // shared observers by config key
 const IOEntries = new WeakMap(); // el → { fn, once, key }
 
@@ -16,13 +17,13 @@ const ROPool = new Map();
 const ROCallbacks = new WeakMap();
 
 /**
- * observe() — helper for IntersectionObserver with pooling and auto cleanup.
+ * Helper for IntersectionObserver with pooling and auto cleanup.
  *
  * One IntersectionObserver per config, shared across elements. The callback
  * receives a single IntersectionObserverEntry for the element you observed so
  * you don't need to dig through an array.
  *
- *   once: true — fire once, then stop watching (per-element, not per-pool)
+ *   once: true - fire once, then stop watching (per-element, not per-pool)
  */
 export const observe = (el, fn, opts = {}) => {
 	const { once = false, ...ioOpts } = opts;
@@ -59,16 +60,24 @@ export const observe = (el, fn, opts = {}) => {
 };
 
 /**
- * resize() — Pooled ResizeObserver, auto-cleanup.
+ * Pooled ResizeObserver with auto-cleanup.
  *
- * RO doesn't NEED pooling, but it doesn't hurt! Like elsewhere, cleanup is
+ * RO doesn't NEED pooling, but it doesn't hurt! Like everywhere else, cleanup is
  * auto-registered so you don't need to worry about it.
  *
  * The callback receives a single ResizeObserverEntry for the element you're
  * watching. This is a slight deviation from native, but it's consistent with
  * observe() and avoids having to dig through arrays.
+ *
+ * If no element is given, observes the root itself - resize(root, fn).
  */
 export const resize = (root, el, fn) => {
+	// Allow resize(root, fn) - el defaults to root
+	if (typeof el === 'function') {
+		fn = el;
+		el = root;
+	}
+
 	const key = 'default';
 
 	// If the element is already being observed, just swap the callback
