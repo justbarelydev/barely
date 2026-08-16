@@ -25,11 +25,15 @@
  *   </button>
  *   <div data-popover="custom" hidden>...</div>
  *
+ * Targets are matched by a data-popover key - a <template>, a live element,
+ * or title/data-content strings. Lookup is document-wide (or scoped to
+ * data-container when set), so keys must be unique.
+ *
  * Config attrs:
- *   data-mode="persistent" - no light dismiss, must use data-close
  *   data-placement         - top | right | bottom | left (default: bottom)
  *   data-offset-x/y 		- px gap from trigger (refracted to CSS vars)
- *   data-container         - CSS selector for scrollable container
+ *   data-mode="persistent" - no light dismiss, must use data-close
+ *   data-container         - portal container - scopes target lookup
  *   data-close             - button inside popover that closes it
  *   data-focus            	- element inside popover to focus on open
  *
@@ -44,6 +48,7 @@ import {
 	hasMode,
 	popupCoords,
 	setAttrs,
+	showElement,
 	listen,
 	emit,
 	unitize,
@@ -71,8 +76,23 @@ const getTarget = (root) => {
 	const targetKey = root.dataset.trigger;
 
 	if (targetKey) {
+		// data-container scopes the lookup (portals) or document
+		const scope = root.dataset.container
+			? document.querySelector(root.dataset.container)
+			: document;
+		// If container is declared but not found, bail.
+		if (!scope) return { target: null, owns: false };
+
+		// Warn on duplicate keys so two popovers can't silently point to the same
+		// target. Ignore open/in-flight keys (Barely's runtime clones).
+		const matches = scope.querySelectorAll(
+			`[data-popover="${targetKey}"]:not([data-open]):not([data-opening]):not([data-closing])`,
+		);
+		if (matches.length > 1)
+			console.warn(`[barely] duplicate data-popover key "${targetKey}"`);
+
 		// Template: clone
-		const template = document.querySelector(
+		const template = scope.querySelector(
 			`template[data-popover="${targetKey}"]`,
 		);
 		if (template) {
@@ -84,7 +104,7 @@ const getTarget = (root) => {
 		}
 
 		// Live element: use
-		const live = document.querySelector(`[data-popover="${targetKey}"]`);
+		const live = scope.querySelector(`[data-popover="${targetKey}"]`);
 		if (live) return { target: live, owns: false };
 	}
 
@@ -131,6 +151,15 @@ const show = (root) => {
 	ensureAttr(target, 'id', contentId);
 	root.setAttribute('aria-controls', contentId);
 
+	// ARIA: dialog label - copy from trigger if the target doesn't have one
+	if (
+		!target.hasAttribute('aria-label') &&
+		!target.hasAttribute('aria-labelledby')
+	) {
+		const label = root.getAttribute('aria-label') || root._barelyTitle;
+		if (label) ensureAttr(target, 'aria-label', label);
+	}
+
 	// Close button - listen once
 	if (!target._barelyHasClose) {
 		target._barelyHasClose = true;
@@ -143,11 +172,11 @@ const show = (root) => {
 	});
 
 	// If barely created the target, append it to the container (or body)
+	let container = null;
 	if (owns) {
-		const container = root.dataset.container
+		container = root.dataset.container
 			? document.querySelector(root.dataset.container) || document.body
 			: document.body;
-		root._barelyContainer = container;
 		if (container !== document.body) {
 			const wrapper = document.createElement('div');
 			wrapper.style.position = 'relative';
@@ -158,12 +187,8 @@ const show = (root) => {
 		}
 	}
 
-	target.removeAttribute('hidden');
-
-	// If display:none is used instead of [hidden], override it
-	if (getComputedStyle(target).display === 'none') {
-		target.style.display = 'block';
-	}
+	// Remove [hidden] so CSS controls visibility
+	showElement(target);
 
 	const preferred = root.dataset.placement ?? 'bottom';
 	const offsetX = parseFloat(root.style.getPropertyValue('--offset-x')) || 0;
@@ -177,7 +202,6 @@ const show = (root) => {
 		offsetY,
 	);
 
-	const container = root._barelyContainer;
 	if (container && container !== document.body) {
 		const wrapper = target.parentElement.getBoundingClientRect();
 		Object.assign(target.style, {
@@ -200,8 +224,6 @@ const show = (root) => {
 			'data-opening': true,
 		});
 		setAttrs(root, { 'aria-expanded': 'true' });
-
-		target._barelyReturnFocus = root;
 
 		waitForAnimation(target, () => {
 			requestAnimationFrame(() => {
@@ -253,13 +275,7 @@ const hide = (root, returnFocus = true) => {
 			target.style.display = '';
 		}
 
-		if (returnFocus) {
-			const returnTo = target._barelyReturnFocus;
-			if (returnTo) {
-				target._barelyReturnFocus = null;
-				returnTo.focus();
-			}
-		}
+		if (returnFocus) root.focus();
 
 		emit(root, 'barely:popoverchange', { open: false });
 	});
