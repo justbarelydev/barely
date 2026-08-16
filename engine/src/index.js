@@ -27,3 +27,4 @@ export * from './helpers/events';
 export * from './helpers/observe';
 export * from './helpers/position';
 export * from './helpers/timing';
+export * from './helpers/measure';

@@ -31,8 +31,6 @@ export const children = (root, selector) => {
  * Convenience wrapper for children() that returns the first match
  * or null. Like querySelector but with the guards from children()
  *
- *   child(root, '[data-trigger]')  // first trigger or null
- *
  * @param {Element} root
  * @param {string} selector
  * @returns {Element|null}
@@ -63,4 +61,25 @@ export const findComponents = (el, name) => {
 	const attr = 'data-component';
 	const selector = name ? `[${attr}='${name}']` : COMPONENT;
 	return [...el.querySelectorAll(selector)];
+};
+
+/**
+ * Remove [hidden] attribute and override display:none so the element
+ * becomes visible
+ *
+ * @param {Element} el
+ */
+export const showElement = (el) => {
+	el.removeAttribute('hidden');
+	if (getComputedStyle(el).display === 'none') el.style.display = 'block';
+};
+
+/**
+ * Add [hidden] attribute and clear any inline display override
+ *
+ * @param {Element} el
+ */
+export const hideElement = (el) => {
+	el.setAttribute('hidden', '');
+	el.style.display = '';
 };
