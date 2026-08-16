@@ -1,0 +1,56 @@
+/**
+ * @justbarely/components - Shared nested positioning (structural)
+ *
+ * Base placement rules for tooltip and dropdown. Both position in-tree
+ * (nested) rather than body-appended - the coordinate model that native
+ * CSS anchor positioning (anchor(), position-area) formalizes.
+ *
+ * Components set position: absolute and lifecycle states themselves.
+ * Selectors are scoped to [data-target] (tooltip) and [data-menu] (dropdown)
+ * so that the wrapper's data-placement config attribute does not trigger
+ * positioning CSS.
+ *
+ * CSS var contract:
+ *   --shift-x / --shift-y  - collision shift (JS writes px, e.g. "12px")
+ *   --offset-x / --offset-y - gap from trigger (refracted from data-offset-*)
+ */
+
+[data-target][data-placement='top'],
+[data-menu][data-placement='top'] {
+	bottom: calc(100% + var(--offset-y, 0px));
+	left: 50%;
+	transform: translate(
+		calc(-50% + var(--shift-x, 0px) + var(--offset-x, 0px)),
+		var(--shift-y, 0px)
+	);
+}
+
+[data-target][data-placement='bottom'],
+[data-menu][data-placement='bottom'] {
+	top: calc(100% + var(--offset-y, 0px));
+	left: 50%;
+	transform: translate(
+		calc(-50% + var(--shift-x, 0px) + var(--offset-x, 0px)),
+		var(--shift-y, 0px)
+	);
+}
+
+[data-target][data-placement='left'],
+[data-menu][data-placement='left'] {
+	right: calc(100% + var(--offset-x, 0px));
+	top: 50%;
+	transform: translate(
+		var(--shift-x, 0px),
+		calc(-50% + var(--shift-y, 0px) + var(--offset-y, 0px))
+	);
+}
+
+[data-target][data-placement='right'],
+[data-menu][data-placement='right'] {
+	left: calc(100% + var(--offset-x, 0px));
+	top: 50%;
+	transform: translate(
+		var(--shift-x, 0px),
+		calc(-50% + var(--shift-y, 0px) + var(--offset-y, 0px))
+	);
+}

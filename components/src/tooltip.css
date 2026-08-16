@@ -2,6 +2,8 @@
  * @justbarely/components - Tooltip (structural styles only)
  */
 
+@import './positioning.css';
+
 [data-component='tooltip'] {
 	--offset-x: 0px;
 	--offset-y: 0px;
@@ -23,6 +25,7 @@
 	font: message-box;
 	padding: 0.25rem 0.5rem;
 	border: 1px solid;
+	/* Set transition to 0s by default so the delay works if used */
 	transition:
 		opacity 0s,
 		visibility 0s;
@@ -36,41 +39,4 @@
 		opacity 0s,
 		visibility 0s;
 	transition-delay: var(--show-delay);
-}
-
-/** Positioning driven by data-placement - both axes shift to prevent viewport overflow */
-[data-component='tooltip'] [data-target][data-placement='top'] {
-	bottom: calc(100% + var(--offset-y));
-	left: 50%;
-	transform: translate(
-		calc(-50% + var(--tooltip-shift, 0px) + var(--offset-x)),
-		var(--tooltip-shift-y, 0px)
-	);
-}
-
-[data-component='tooltip'] [data-target][data-placement='bottom'] {
-	top: calc(100% + var(--offset-y));
-	left: 50%;
-	transform: translate(
-		calc(-50% + var(--tooltip-shift, 0px) + var(--offset-x)),
-		var(--tooltip-shift-y, 0px)
-	);
-}
-
-[data-component='tooltip'] [data-target][data-placement='left'] {
-	right: calc(100% + var(--offset-x));
-	top: 50%;
-	transform: translate(
-		var(--tooltip-shift, 0px),
-		calc(-50% + var(--tooltip-shift-y, 0px) + var(--offset-y))
-	);
-}
-
-[data-component='tooltip'] [data-target][data-placement='right'] {
-	left: calc(100% + var(--offset-x));
-	top: 50%;
-	transform: translate(
-		var(--tooltip-shift, 0px),
-		calc(-50% + var(--tooltip-shift-y, 0px) + var(--offset-y))
-	);
 }

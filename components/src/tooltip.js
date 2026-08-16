@@ -15,9 +15,9 @@
  *   </div>
  *
  * Positioning is CSS-driven: fitToViewport computes placement and shift,
- * which is then written to --tooltip-shift CSS vars
+ * written to --shift-x/--shift-y CSS vars
  *
- * Offsets are refracted and calculated in translate()
+ * Offsets are refracted to --offset-x/y, applied in positioning.css
  * Show/hide delays use CSS transition-delay which means no JS timers
  *
  * Config attrs:
@@ -33,8 +33,10 @@ import {
 	child,
 	setAttrs,
 	ensureAttr,
+	showElement,
 	unitize,
 	fitToViewport,
+	adjustForWrapper,
 } from '@justbarely/engine';
 
 const Tooltip = Barely.register('tooltip', {
@@ -77,12 +79,8 @@ Tooltip.onMount((root) => {
 		root.appendChild(tooltip);
 	}
 
-	// Remove [hidden] so CSS controls visibility.
-	// Guard display:none - user may have used that instead of [hidden].
-	tooltip.removeAttribute('hidden');
-	if (getComputedStyle(tooltip).display === 'none') {
-		tooltip.style.display = 'block';
-	}
+	// Remove [hidden] so CSS controls visibility
+	showElement(tooltip);
 
 	// ARIA
 	const id = tooltip.getAttribute('id') || `tooltip-${tooltipId++}`;
@@ -97,31 +95,16 @@ Tooltip.onMount((root) => {
 			preferred,
 		);
 
-		// fitToViewport shifts are viewport-relative to the trigger.
-		// If using a wrapper (trigger !== root), the CSS left:50% centers on the
-		// wrapper, not the trigger. Adjust shifts by the trigger→wrapper offset.
-		let adjustX = 0,
-			adjustY = 0;
-		if (trigger !== root) {
-			const rootRect = root.getBoundingClientRect();
-			const triggerRect = trigger.getBoundingClientRect();
-
-			adjustX =
-				triggerRect.left +
-				triggerRect.width / 2 -
-				(rootRect.left + rootRect.width / 2);
-			adjustY =
-				triggerRect.top +
-				triggerRect.height / 2 -
-				(rootRect.top + rootRect.height / 2);
-		}
+		// fitToViewport shifts are trigger-relative. CSS left:50% centers on
+		// the wrapper - adjust when trigger ≠ root (wrapper + trigger sibling pattern).
+		const { adjustX, adjustY } = adjustForWrapper(root, trigger);
 
 		setAttrs(tooltip, {
 			'data-placement': placement,
 			'data-open': true,
 		});
-		tooltip.style.setProperty('--tooltip-shift', `${shiftX + adjustX}px`);
-		tooltip.style.setProperty('--tooltip-shift-y', `${shiftY + adjustY}px`);
+		tooltip.style.setProperty('--shift-x', `${shiftX + adjustX}px`);
+		tooltip.style.setProperty('--shift-y', `${shiftY + adjustY}px`);
 	};
 
 	const hide = () => tooltip.removeAttribute('data-open');
