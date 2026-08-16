@@ -2,7 +2,6 @@
  * @justbarely/engine - MutationObserver
  *
  * Since we are using MO for state updates, we need to be efficient about it:
- *
  * - Per-component MOs for attribute changes (scoped to each component root)
  * - One global MO for childList (dynamically added/removed elements)
  *
@@ -18,7 +17,7 @@ import { refract } from './helpers/attr';
 import { runCleanup } from './helpers/cleanup';
 import { emit } from './helpers/emit';
 
-// Per-element, per-attribute write counter — catches runaway loops
+// Per-element, per-attribute write counter - catches runaway loops
 const RUNAWAY_LIMIT = 25;
 const _counts = new WeakMap();
 
@@ -39,7 +38,7 @@ const isRunaway = (el, attr) => {
 
 	if (++entry.count === RUNAWAY_LIMIT) {
 		console.error(
-			`barely: runaway update on [${attr}] — halting. ` +
+			`barely: runaway update on [${attr}] - stopping. ` +
 				`Check onEffect for infinite loops.`,
 			el,
 		);
@@ -48,10 +47,7 @@ const isRunaway = (el, attr) => {
 	return entry.count >= RUNAWAY_LIMIT;
 };
 
-/**
- * Per-component attribute observers — WeakMap for automatic cleanup if the
- * component element is removed from the DOM
- */
+// Per-component attribute observers, keyed by element for auto garbage collection
 const AttrObservers = new WeakMap();
 
 /**
@@ -61,8 +57,7 @@ const AttrObservers = new WeakMap();
 function createAttrObserver(blueprint) {
 	return new MutationObserver((mutations) => {
 		for (const mutation of mutations) {
-			/** Refract writes to the `style` attribute so if someone puts `style`
-			 * in watch or refract, this blocks to prevent infinite loops */
+			// Refract writes to style, so block style mutations or this loops forever
 			if (mutation.attributeName === 'style') {
 				console.warn(
 					'Ignoring mutations to the [style] attr to prevent infinite loops',
@@ -75,10 +70,7 @@ function createAttrObserver(blueprint) {
 			if (newValue === oldValue) continue;
 			if (isRunaway(target, attributeName)) continue;
 
-			/**
-			 * Convert data-attr values to CSS vars if refract is defined in
-			 * the blueprint, and hook it up to onRefract lifecycle method
-			 */
+			// Refract data-attr values to CSS vars (onRefract)
 			if (
 				blueprint.refract?.includes(attributeName) ||
 				target._barelyRefract?.includes(attributeName)
@@ -107,9 +99,15 @@ function createAttrObserver(blueprint) {
 	});
 }
 
-// Creates and starts MO per component and stores it in a weakmap for auto GC
+/**
+ * Attach a per-component attribute MO that only watches what this blueprint
+ * (or any data-watch / data-refract element) cares about.
+ *
+ * @param {Element} el
+ * @param {object} blueprint
+ */
 export const attachAttrMO = (el, blueprint) => {
-	// Non-component watch/refract — space-separated literal attribute names
+	// Non-component watch/refract - space-separated literal attribute names
 	const instanceWatch = el.dataset.watch?.split(/\s+/) ?? [];
 	const instanceRefract = el.dataset.refract?.split(/\s+/) ?? [];
 
@@ -141,7 +139,8 @@ function teardownTree(root) {
 	const all = [root, ...(root.querySelectorAll?.('*') ?? [])];
 	for (const el of all) {
 		runCleanup(el);
-		// Clean up runaway counters too — GC handles the rest
+
+		// Clean up runaway counters too - GC handles the rest
 		_counts.delete(el);
 		if (el.matches?.(COMPONENT)) {
 			emit(el, 'barely:unmount', { name: getComponentName(el) });
@@ -216,7 +215,7 @@ export const initMutation = (Registry) => {
 		subtree: true,
 	});
 
-	// MO only catches dynamically added elements — bind existing ones
+	// MO only catches dynamically added elements - bind existing ones
 	children(document, SYNC).forEach((el) => bindSyncElement(el));
 
 	// Bind existing ad-hoc [data-watch] / [data-refract] on non-components
