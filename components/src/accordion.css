@@ -1,65 +1,101 @@
 /**
- * @justbarely/components - Accordion (structural styles only)
+ * @justbarely/components - Accordion
  */
 
-/** Summary gets a pointer cursor */
-[data-component='accordion'] summary {
-	cursor: pointer;
-}
+[data-component='accordion'] {
+	& summary {
+		cursor: pointer;
+	}
 
-/** Hide closed panels */
-[data-component='accordion'] [data-target]:not([data-open]) {
-	display: none;
-}
+	/* Closed panel (default) */
+	& [data-target] {
+		height: 0;
+		overflow: hidden;
+	}
 
-/** Accessible focus ring */
-[data-component='accordion'] summary:focus-visible,
-[data-component='accordion'] [data-trigger]:focus-visible {
-	outline: 2px solid currentColor;
-	outline-offset: 2px;
-}
+	/* Open panel */
+	& [data-target][data-open] {
+		display: block;
+		overflow: hidden;
+	}
 
-/** Horizontal: closed items shrink to trigger, open items fill remaining */
-[data-component='accordion'][data-mode~='horizontal'] {
-	display: flex;
-}
+	/* Focus ring */
+	& summary:focus-visible,
+	& [data-trigger]:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: 2px;
+	}
 
-/** Horizontal: keep closed panels in flow at zero width (no layout jump) */
-[data-component='accordion'][data-mode~='horizontal']
-	[data-target]:not([data-open]) {
-	display: block;
-	width: 0;
-	overflow: hidden;
-	flex: 0 0 0;
-}
+	/* Vertical (default) */
+	&:not([data-mode~='horizontal']) {
+		& [data-trigger] {
+			display: block;
+		}
 
-/** Native horizontal: details wrap summary+content */
-[data-component='accordion'][data-mode~='horizontal'] details {
-	display: flex;
-	flex: 0 1 auto;
-}
-[data-component='accordion'][data-mode~='horizontal'] details[open],
-[data-component='accordion'][data-mode~='horizontal'] > *:has(details[open]) {
-	flex: 1 1 0;
-	min-width: 0;
-}
-[data-component='accordion'][data-mode~='horizontal'] summary {
-	flex-shrink: 0;
-}
-[data-component='accordion'][data-mode~='horizontal'] details > :not(summary) {
-	flex: 1;
-}
+		& [data-target][data-open] {
+			height: var(--panel-height);
+		}
+	}
 
-/** Custom vertical */
-[data-component='accordion']:not([data-mode~='horizontal']) [data-trigger] {
-	display: block;
-}
+	/* Horizontal */
+	&[data-mode~='horizontal'] {
+		display: flex;
+		align-items: stretch;
 
-/** Custom horizontal: flat siblings, triggers static, open panel flexes */
-[data-component='accordion'][data-mode~='horizontal'] [data-trigger] {
-	flex-shrink: 0;
-}
-[data-component='accordion'][data-mode~='horizontal'] [data-target][data-open] {
-	flex: 1 1 0;
-	min-width: 0;
+		/* Prevent CLS - normally I'd leave that to themes, but because
+		--panel-width is measured during onMount it makes sense here */
+		&:not([data-ready]) {
+			visibility: hidden;
+		}
+
+		& [data-trigger] {
+			flex-shrink: 0;
+		}
+
+		& [data-target] > * {
+			width: var(--panel-width);
+		}
+
+		/* Closed (default) - collapsed to 0 width. display:block keeps it in
+		   the flex flow (can't use display:none); height:auto keeps the
+		   triggers from collapsing when every panel is closed. */
+		& [data-target] {
+			display: block;
+			max-width: 0;
+			height: auto;
+			overflow: hidden;
+		}
+
+		/* Fully closed - keep in flex flow but out of the a11y tree */
+		& [data-target][hidden] {
+			visibility: hidden;
+		}
+
+		/* Open - expands to --panel-width measured on mount + resize */
+		& [data-target][data-open] {
+			flex: 0 0 var(--panel-width);
+			max-width: var(--panel-width);
+			overflow: hidden;
+		}
+
+		/* Native horizontal - details wrap summary + content */
+		& details {
+			display: flex;
+			flex: 0 1 auto;
+		}
+
+		& details[open],
+		& > *:has(details[open]) {
+			flex: 1 1 0;
+			min-width: 0;
+		}
+
+		& summary {
+			flex-shrink: 0;
+		}
+
+		& details > :not(summary) {
+			flex: 1;
+		}
+	}
 }
