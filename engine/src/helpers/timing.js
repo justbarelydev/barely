@@ -3,11 +3,12 @@
  */
 
 /**
- * Wait for a CSS transition or animation to finish, then callback
- * If the element has no transition/animation, calls immediately (after one rAF)
+ * Wait for a CSS transition or animation to finish, then callback. If the
+ * element has no transition/animation it calls immediately (well... technically
+ * after one rAF).
  *
- * Includes a setTimeout safety net in case transitionend/animationend never fire
- * (element removed from DOM mid-transition, display:none, same-value no-op, etc)
+ * Includes a setTimeout safety net. If the transition/animation never fires,
+ * it calls after the longest duration + 50ms.
  *
  * @param {Element} el
  * @param {Function} callback
