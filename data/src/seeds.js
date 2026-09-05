@@ -1,5 +1,5 @@
 /**
- * @barely/data — seed data
+ * @barely/data - seed data
  *
  * All seed arrays in one flat file with named exports.
  * Unused exports can be tree-shaken by the bundler.

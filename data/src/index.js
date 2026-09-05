@@ -1,8 +1,8 @@
 /**
- * @barely/data — placeholder data generators
+ * @barely/data - placeholder data generators
  *
  * Add realistic fake data to your HTML with data attributes.
- * All generators are standalone functions — call them directly or use the DOM bridge.
+ * All generators are standalone functions - call them directly or use the DOM bridge.
  */
 
 // Field generators
@@ -27,5 +27,5 @@ export { avatar, image } from './fields/image';
 // Helpers
 export { pick, randomInt, toList } from './helpers';
 
-// DOM bridge — call init() to scan for [data-random-*] attributes
+// DOM bridge - call init() to scan for [data-random-*] attributes
 export { init } from './browser';

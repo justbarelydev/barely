@@ -1,5 +1,5 @@
 /**
- * @justbarely/core — spatial positioning, pure geometry function(s)
+ * @justbarely/core - spatial positioning, pure geometry
  */
 
 /**

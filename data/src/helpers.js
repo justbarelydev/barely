@@ -1,5 +1,5 @@
 /**
- * @barely/data — utility functions
+ * @barely/data - utility functions
  */
 
 /** @returns a random item from the array */

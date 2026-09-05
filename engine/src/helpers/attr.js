@@ -1,6 +1,5 @@
 /**
- * @justbarely/engine - attribute helpers
- * Thin wrappers for dealing with attributes
+ * @justbarely/engine - helpers for dealing with attributes
  */
 
 import { hasToken } from '@justbarely/core';
@@ -24,8 +23,7 @@ export const setAttrs = (el, attrs) => {
 };
 
 /**
- * onRefract helper: adds a unit to bare numbers or passes explicit
- * units through as-is
+ * Adds a unit to bare numbers or passes explicit units through unchanged
  *
  * unitize('px') returns a function that turns "12" → "12px"
  * and "100%" → "100%"
@@ -48,14 +46,37 @@ export const ensureAttr = (el, name, value) => {
 };
 
 /**
- * Convert a data-attribute to an inline CSS var
+ * Write an inline CSS custom property. Numbers are unitless by default
+ * (normalized 0-1 values like progress), pass a unit for dimensions.
+ * Strings pass through unchanged. Skips if the value didn't change.
+ *
+ *   setCssVar(el, 'progress', 0.43)          -> --progress: 0.43
+ *   setCssVar(el, 'panel-height', 200, 'px') -> --panel-height: 200px
+ *   setCssVar(el, 'offset-x', '1rem')        -> --offset-x: 1rem
  *
  * @param {Element} el
- * @param {string} name
+ * @param {string} name - no leading -- (e.g. 'panel-height')
+ * @param {number|string} value
+ * @param {string} [unit=''] - appended to numbers; pass 'px', 'rem', etc.
+ */
+export const setCssVar = (el, name, value, unit = '') => {
+	const prop = `--${name}`;
+	const val = typeof value === 'number' ? `${value}${unit}` : value;
+	if (el.style.getPropertyValue(prop) === val) return;
+	el.style.setProperty(prop, val);
+};
+
+/**
+ * Convert a data-attribute to an inline CSS var. Uses setCssVar (unitless)
+ * so refracted values stay exactly as authored - units come from onRefract
+ * transforms (unitize).
+ *
+ * @param {Element} el
+ * @param {string} name - data-attribute name (data-offset-x -> --offset-x)
  * @param {string} val
  */
 export const refract = (el, name, val) =>
-	el.style.setProperty(`--${name.replace(/^data-/, '')}`, val);
+	setCssVar(el, name.replace(/^data-/, ''), val);
 
 /**
  * Check if a flag (specific string) is in [data-mode]

@@ -1,5 +1,5 @@
 /**
- * @barely/data — CDN entry point
+ * @barely/data - CDN entry point
  *
  * Re-exports all generators and auto-initializes the DOM bridge.
  * Use this via `<script src="...@justbarely/data">` for drop-in placeholder data.

@@ -1,5 +1,5 @@
 /**
- * @barely/data — DOM bridge
+ * @barely/data - DOM bridge
  *
  * Auto-initializes on load.
  * Scans for [data-random-*] attributes and populates them

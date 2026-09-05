@@ -1,10 +1,10 @@
 /**
- * @justbarely/core — timing utilities
+ * @justbarely/core - timing utilities
  * Environment-agnostic pure functions
  */
 
 /**
- * Debounce — call fn after ms of inactivity.
+ * Debounce - call fn after ms of inactivity.
  * Each call resets the timer, only the last call in a burst fires.
  *
  * @param {Function} fn
@@ -22,7 +22,7 @@ export const debounce = (fn, ms = 150) => {
 };
 
 /**
- * Throttle — call fn at most once per ms.
+ * Throttle - call fn at most once per ms.
  * Leading edge fires immediately, trailing edge fires after the window
  * if calls kept coming.
  *
