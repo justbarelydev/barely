@@ -11,7 +11,7 @@
  *   <!-- wrapper + [data-trigger]/[data-target]: siblings for rich HTML -->
  *   <div data-component="tooltip">
  *     <button data-trigger>Save</button>
- *     <div data-target hidden><strong>Bold</strong> tooltip</div>
+ *     <div data-target><strong>Bold</strong> tooltip</div>
  *   </div>
  *
  * Positioning is CSS-driven: fitToViewport computes placement and shift,
@@ -27,16 +27,20 @@
  *   data-hide-delay    - ms before hiding
  */
 
+import './base.css';
+import './positioning.css';
+import './tooltip.css';
+
 import {
 	Barely,
 	listen,
 	child,
 	setAttrs,
 	ensureAttr,
-	showElement,
 	unitize,
 	fitToViewport,
 	adjustForWrapper,
+	setCssVar,
 } from '@justbarely/engine';
 
 const Tooltip = Barely.register('tooltip', {
@@ -79,9 +83,6 @@ Tooltip.onMount((root) => {
 		root.appendChild(tooltip);
 	}
 
-	// Remove [hidden] so CSS controls visibility
-	showElement(tooltip);
-
 	// ARIA
 	const id = tooltip.getAttribute('id') || `tooltip-${tooltipId++}`;
 	setAttrs(tooltip, { id });
@@ -103,8 +104,8 @@ Tooltip.onMount((root) => {
 			'data-placement': placement,
 			'data-open': true,
 		});
-		tooltip.style.setProperty('--shift-x', `${shiftX + adjustX}px`);
-		tooltip.style.setProperty('--shift-y', `${shiftY + adjustY}px`);
+		setCssVar(tooltip, 'shift-x', shiftX + adjustX, 'px');
+		setCssVar(tooltip, 'shift-y', shiftY + adjustY, 'px');
 	};
 
 	const hide = () => tooltip.removeAttribute('data-open');

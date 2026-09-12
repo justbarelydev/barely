@@ -1,6 +1,8 @@
 /**
  * @justbarely/components - Popover
  *
+ * There are a few ways to implement this:
+ *
  *   <!-- title only -->
  *   <button data-component="popover" title="Save changes">
  *     Save
@@ -11,6 +13,12 @@
  *     Delete
  *   </button>
  *
+ *   <!-- existing element -->
+ *   <button data-component="popover" data-trigger="custom">
+ *     Open
+ *   </button>
+ *   <div data-popover="custom">...</div>
+ *
  *   <!-- <template> for full HTML -->
  *   <button data-component="popover" data-trigger="menu">
  *     Actions
@@ -19,27 +27,24 @@
  *     <div role="dialog" aria-label="Menu">...</div>
  *   </template>
  *
- *   <!-- existing element (hidden by default) -->
- *   <button data-component="popover" data-trigger="custom">
- *     Open
- *   </button>
- *   <div data-popover="custom" hidden>...</div>
- *
- * Targets are matched by a data-popover key - a <template>, a live element,
- * or title/data-content strings. Lookup is document-wide (or scoped to
- * data-container when set), so keys must be unique.
+ * Key ties a trigger to its content. Barely looks for content document-wide,
+ * but you can scope it to a container with [data-container=".selector"].
  *
  * Config attrs:
  *   data-placement         - top | right | bottom | left (default: bottom)
- *   data-offset-x/y 		- px gap from trigger (refracted to CSS vars)
+ *   data-offset-x/y        - px gap from trigger (refracted to CSS vars)
  *   data-mode="persistent" - no light dismiss, must use data-close
  *   data-container         - portal container - scopes target lookup
  *   data-close             - button inside popover that closes it
- *   data-focus            	- element inside popover to focus on open
+ *   data-focus             - element inside popover to focus on open
  *
  * Events:
- *   barely:popoverchange -> { open: boolean }
+ *   barely:beforechange -> { open: boolean }
+ *   barely:afterchange  -> { open: boolean }
  */
+
+import './base.css';
+import './popover.css';
 
 import {
 	Barely,
@@ -48,7 +53,6 @@ import {
 	hasMode,
 	popupCoords,
 	setAttrs,
-	showElement,
 	listen,
 	emit,
 	unitize,
@@ -65,33 +69,33 @@ Popover.onRefract('data-offset-y', unitize('px'));
 
 let popoverId = 0;
 
-const isOpen = (target) =>
-	target.hasAttribute('data-open') || target.hasAttribute('data-opening');
+const isOpen = (target) => target.hasAttribute('data-open');
 
 /**
  * Create or find the target for a trigger. Returns the element and
- * whether Barely owns (generates) it (if owned it will remove on hide)
+ * whether Barely owns (generated) it. If owned it will remove on hide.
  */
 const getTarget = (root) => {
 	const targetKey = root.dataset.trigger;
 
 	if (targetKey) {
-		// data-container scopes the lookup (portals) or document
+		// Look for data-container, otherwise scope to document
 		const scope = root.dataset.container
 			? document.querySelector(root.dataset.container)
 			: document;
-		// If container is declared but not found, bail.
+
+		// Skip if container is declared but not found
 		if (!scope) return { target: null, owns: false };
 
-		// Warn on duplicate keys so two popovers can't silently point to the same
-		// target. Ignore open/in-flight keys (Barely's runtime clones).
+		// Warn for duplicate keys so two popovers can't silently point to the same
+		// target. Ignore open/in-flight keys (Barely clones for templates).
 		const matches = scope.querySelectorAll(
-			`[data-popover="${targetKey}"]:not([data-open]):not([data-opening]):not([data-closing])`,
+			`[data-popover="${targetKey}"]:not([data-open])`,
 		);
 		if (matches.length > 1)
 			console.warn(`[barely] duplicate data-popover key "${targetKey}"`);
 
-		// Template: clone
+		// Templates are cloned
 		const template = scope.querySelector(
 			`template[data-popover="${targetKey}"]`,
 		);
@@ -103,12 +107,12 @@ const getTarget = (root) => {
 			}
 		}
 
-		// Live element: use
+		// Live elements are used as-is
 		const live = scope.querySelector(`[data-popover="${targetKey}"]`);
 		if (live) return { target: live, owns: false };
 	}
 
-	// String content: build it from title + data-content
+	// String content: title + data-content
 	const title = root._barelyTitle;
 	const content = root.dataset.content;
 	if (title || content) {
@@ -139,10 +143,8 @@ const getTarget = (root) => {
 const show = (root) => {
 	const { target, owns } = getTarget(root);
 	if (!target) return;
+	if (target.hasAttribute('data-open')) return;
 
-	if (target._barelyOpening || target._barelyClosing) return;
-
-	target._barelyOpening = true;
 	target._barelyOwns = owns;
 	root._barelyTarget = target;
 
@@ -187,9 +189,6 @@ const show = (root) => {
 		}
 	}
 
-	// Remove [hidden] so CSS controls visibility
-	showElement(target);
-
 	const preferred = root.dataset.placement ?? 'bottom';
 	const offsetX = parseFloat(root.style.getPropertyValue('--offset-x')) || 0;
 	const offsetY = parseFloat(root.style.getPropertyValue('--offset-y')) || 0;
@@ -215,69 +214,52 @@ const show = (root) => {
 		});
 	}
 
-	// Force a reflow to let the browser catch up before we start the fade-in
+	emit(root, 'barely:beforechange', { open: true });
+
+	// Fresh targets need a reflow + frame before [data-open], or the enter
+	// transition has no starting point.
 	target.offsetHeight;
 	requestAnimationFrame(() => {
 		setAttrs(target, {
 			'data-placement': fit.placement,
-			'data-closing': false,
-			'data-opening': true,
+			'data-open': true,
+			'aria-hidden': false,
 		});
 		setAttrs(root, { 'aria-expanded': 'true' });
 
-		waitForAnimation(target, () => {
-			requestAnimationFrame(() => {
-				const el = target.querySelector('[data-focus]') || target;
-				if (!el.hasAttribute('tabindex'))
-					el.setAttribute('tabindex', '-1');
-				el.focus();
+		const el = target.querySelector('[data-focus]') || target;
+		if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+		el.focus();
 
-				target._barelyOpening = false;
-				setAttrs(target, {
-					'data-open': true,
-					'data-opening': false,
-				});
-				emit(root, 'barely:popoverchange', { open: true });
-			});
-		});
+		emit(root, 'barely:afterchange', { open: true });
 	});
 };
 
 const hide = (root, returnFocus = true) => {
 	const target = root._barelyTarget;
 	if (!target) return;
-	if (target._barelyClosing || target._barelyOpening) return;
+	if (!target.hasAttribute('data-open')) return;
 
-	target._barelyClosing = true;
-
-	setAttrs(target, { 'data-closing': true });
+	emit(root, 'barely:beforechange', { open: false });
+	setAttrs(target, { 'data-open': false, 'aria-hidden': true });
 	setAttrs(root, { 'aria-expanded': 'false' });
+	emit(root, 'barely:afterchange', { open: false });
 
+	if (returnFocus) root.focus();
+
+	if (!target._barelyOwns) return;
+
+	// Clean up nested popovers before removing the container
+	const nested = target.querySelectorAll('[data-component="popover"]');
+	for (const n of nested) {
+		if (n._barelyTarget && isOpen(n._barelyTarget)) hide(n, false);
+	}
+
+	// Wait for the fade-out, then remove.
 	waitForAnimation(target, () => {
-		target._barelyClosing = false;
-		setAttrs(target, { 'data-open': false, 'data-closing': false });
-
-		if (target._barelyOwns) {
-			// Clean up nested popovers before removing the container
-			const nested = target.querySelectorAll(
-				'[data-component="popover"]',
-			);
-			for (const n of nested) {
-				if (n._barelyTarget && isOpen(n._barelyTarget)) hide(n, false);
-			}
-
-			// Remove wrapper or target itself
-			const wrapper = target.parentElement;
-			if (wrapper && wrapper !== document.body) wrapper.remove();
-			else target.remove();
-		} else {
-			target.setAttribute('hidden', '');
-			target.style.display = '';
-		}
-
-		if (returnFocus) root.focus();
-
-		emit(root, 'barely:popoverchange', { open: false });
+		const wrapper = target.parentElement;
+		if (wrapper && wrapper !== document.body) wrapper.remove();
+		else target.remove();
 	});
 };
 
@@ -322,8 +304,9 @@ Popover.onMount((root) => {
 		if (!target || !isOpen(target)) return;
 		if (root.contains(e.target)) return;
 		if (target.contains(e.target)) return;
-		// Don't dismiss if click is inside any open popover
-		if (e.target.closest('[data-popover][data-open]')) return;
+		// Don't dismiss if the click is inside any popover, open or closing
+		// (a nested close already removed [data-open] before this bubbles here)
+		if (e.target.closest('[data-popover]')) return;
 		hide(root);
 	});
 });

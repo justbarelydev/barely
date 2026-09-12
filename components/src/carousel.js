@@ -32,6 +32,9 @@
  * pagination calculations.
  */
 
+import './base.css';
+import './carousel.css';
+
 import {
 	Barely,
 	listen,

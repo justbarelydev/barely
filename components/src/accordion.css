@@ -7,33 +7,22 @@
 		cursor: pointer;
 	}
 
-	/* Closed panel (default) */
-	& [data-target] {
-		height: 0;
-		overflow: hidden;
-	}
-
-	/* Open panel */
-	& [data-target][data-open] {
-		display: block;
-		overflow: hidden;
-	}
-
-	/* Focus ring */
-	& summary:focus-visible,
-	& [data-trigger]:focus-visible {
-		outline: 2px solid currentColor;
-		outline-offset: 2px;
-	}
-
 	/* Vertical (default) */
 	&:not([data-mode~='horizontal']) {
 		& [data-trigger] {
 			display: block;
 		}
 
+		/* overflow: hidden keeps the animated height exact */
+		& [data-target] {
+			overflow: hidden;
+			height: 0;
+			visibility: hidden;
+		}
+
 		& [data-target][data-open] {
-			height: var(--panel-height);
+			height: var(--height);
+			visibility: visible;
 		}
 	}
 
@@ -41,12 +30,6 @@
 	&[data-mode~='horizontal'] {
 		display: flex;
 		align-items: stretch;
-
-		/* Prevent CLS - normally I'd leave that to themes, but because
-		--panel-width is measured during onMount it makes sense here */
-		&:not([data-ready]) {
-			visibility: hidden;
-		}
 
 		& [data-trigger] {
 			flex-shrink: 0;
@@ -56,18 +39,15 @@
 			width: var(--panel-width);
 		}
 
-		/* Closed (default) - collapsed to 0 width. display:block keeps it in
-		   the flex flow (can't use display:none); height:auto keeps the
-		   triggers from collapsing when every panel is closed. */
+		/* Closed by default - 0 width and out and hidden (for a11y).
+		   display:block keeps it in the flex flow (avoiding display:none);
+		   height:auto keeps the triggers from collapsing when all panels are
+		   closed. */
 		& [data-target] {
 			display: block;
 			max-width: 0;
 			height: auto;
 			overflow: hidden;
-		}
-
-		/* Fully closed - keep in flex flow but out of the a11y tree */
-		& [data-target][hidden] {
 			visibility: hidden;
 		}
 
@@ -76,6 +56,7 @@
 			flex: 0 0 var(--panel-width);
 			max-width: var(--panel-width);
 			overflow: hidden;
+			visibility: visible;
 		}
 
 		/* Native horizontal - details wrap summary + content */

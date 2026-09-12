@@ -1,25 +1,22 @@
 /**
- * @justbarely/components - Tabs (structural styles only)
- *
- * Zero visual opinion. Just layout and visibility.
+ * @justbarely/components - Tabs
  */
 
-/** Hide inactive panels and keep them out of focus order/a11y tree. */
-[data-component='tabs'] [data-target]:not([data-active]) {
-	display: none;
+[data-component='tabs'] [data-target] {
+	height: 0;
+	opacity: 0;
+	overflow: hidden;
+	visibility: hidden;
+}
+[data-component='tabs'] [data-target][data-active] {
+	height: auto;
+	opacity: 1;
+	visibility: visible;
 }
 
-/** Tabs are inline-flex buttons with native reset */
+/* Buttons don't inherit the page font - match surrounding text */
 [data-component='tabs'] [data-trigger] {
-	display: inline-flex;
 	font: inherit;
-	cursor: pointer;
-}
-
-/** Accessible focus ring */
-[data-component='tabs'] [data-trigger]:focus-visible {
-	outline: 2px solid currentColor;
-	outline-offset: 2px;
 }
 
 /** Vertical: stack tabs on the left, panels on the right */

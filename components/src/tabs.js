@@ -1,20 +1,33 @@
 /**
  * @justbarely/components - Tabs
  *
- *   <div data-component="tabs">
+ *   <div data-component="tabs" data-active="tab1">
  *     <button data-trigger="tab1" data-active>Tab 1</button>
  *     <button data-trigger="tab2">Tab 2</button>
  *     <div data-target="tab1" data-active>Content 1</div>
  *     <div data-target="tab2">Content 2</div>
  *   </div>
  *
+ * [data-active] on root is the source of truth. Children sync from it, and you
+ * can set [data-active] on root to switch tabs programmatically.
+ *
+ * [data-active] on individual triggers/targets is also supported for initial
+ * state when no root attr is present.
+ *
+ * Tab changes are paint-only. To animate container dimensions, listen for
+ * barely:beforechange/afterchange and measure with setSize().
+ *
  * Config attrs:
  *   data-mode="vertical" - tabs on left, panels on right
  *   	- for panels on left/tabs on right use CSS flex-direction: row-reverse
  *
  * Events:
- *   barely:tabchange -> { active: key }
+ *   barely:beforechange -> { active: key, previous }   (before sync)
+ *   barely:afterchange  -> { active: key, previous }   (after sync)
  */
+
+import './base.css';
+import './tabs.css';
 
 import { wrap } from '@justbarely/core';
 import {
@@ -26,8 +39,9 @@ import {
 	hasMode,
 } from '@justbarely/engine';
 
-const Tabs = Barely.register('tabs');
+const Tabs = Barely.register('tabs', { watch: ['data-active'] });
 
+// Auto-inject a11y on mount/change
 const syncAria = (root) => {
 	const rootAttrs = { role: 'tablist' };
 	if (hasMode(root, 'vertical')) rootAttrs['aria-orientation'] = 'vertical';
@@ -37,8 +51,8 @@ const syncAria = (root) => {
 		setAttrs(el, {
 			role: 'tab',
 			'aria-selected': el.hasAttribute('data-active'),
-			'aria-controls': `target-${el.dataset.trigger}`,
-			id: `trigger-${el.dataset.trigger}`,
+			'aria-controls': 'target-' + el.dataset.trigger,
+			id: 'trigger-' + el.dataset.trigger,
 			tabindex: el.hasAttribute('data-active') ? '0' : '-1',
 		}),
 	);
@@ -46,25 +60,37 @@ const syncAria = (root) => {
 	children(root, '[data-target]').forEach((el) =>
 		setAttrs(el, {
 			role: 'tabpanel',
-			'aria-labelledby': `trigger-${el.dataset.target}`,
-			id: `target-${el.dataset.target}`,
+			'aria-labelledby': 'trigger-' + el.dataset.target,
+			id: 'target-' + el.dataset.target,
 		}),
 	);
 };
 
-const activate = (root, key) => {
+// Sync child [data-active] attrs and ARIA from root's [data-active] value.
+const sync = (root, key) => {
 	children(root, '[data-trigger]').forEach((el) =>
 		setAttrs(el, { 'data-active': el.dataset.trigger === key }),
 	);
-
 	children(root, '[data-target]').forEach((el) =>
 		setAttrs(el, { 'data-active': el.dataset.target === key }),
 	);
-
 	syncAria(root);
-	emit(root, 'barely:tabchange', { active: key });
 };
 
+// Set root attr, onEffect handles child sync/emit (MO fires before next paint).
+const activate = (root, key) => {
+	setAttrs(root, { 'data-active': key });
+};
+
+// Skip initial onEffect call with previous === null, emit before/after change
+Tabs.onEffect('data-active', (root, key, previous) => {
+	if (previous === null) return;
+	emit(root, 'barely:beforechange', { active: key, previous });
+	sync(root, key);
+	emit(root, 'barely:afterchange', { active: key, previous });
+});
+
+// a11y keyboard navigation - arrow keys, home/end, enter/space
 const onKeydown = (e, tab, root) => {
 	const tabs = children(root, '[data-trigger]');
 	const i = tabs.indexOf(tab);
@@ -90,7 +116,6 @@ const onKeydown = (e, tab, root) => {
 			break;
 		case 'Enter':
 		case ' ':
-			// Prevent default behavior (space scrolling, enter submitting, etc)
 			e.preventDefault();
 			activate(root, tab.dataset.trigger);
 			return;
@@ -98,14 +123,25 @@ const onKeydown = (e, tab, root) => {
 			return;
 	}
 
-	// Prevent arrow keys from scrolling
 	e.preventDefault();
 	tabs[next].focus();
 	activate(root, tabs[next].dataset.trigger);
 };
 
 Tabs.onMount((root) => {
-	syncAria(root);
+	// Set initial state. Root [data-active] takes precedence, otherwise the first
+	// child. With a key, hoist it to root and sync children/ARIA. Without a
+	// key, inject ARIA only.
+	const key =
+		root.dataset.active ||
+		children(root, '[data-trigger][data-active]')[0]?.dataset.trigger;
+
+	if (key) {
+		setAttrs(root, { 'data-active': key });
+		sync(root, key); // MO not attached yet, onEffect won't fire
+	} else {
+		syncAria(root);
+	}
 
 	listen(
 		root,

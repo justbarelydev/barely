@@ -1,0 +1,18 @@
+/**
+ * @justbarely/components - Base (structural normalize)
+ *
+ * Structural styles every component relies on. Imported by each component
+ * stylesheet (importing more than once is harmless don't worry).
+ */
+
+@layer components, base, theme, motion;
+
+/* Scoped to components - global reset is in the theme layer */
+[data-component],
+[data-component] * {
+	box-sizing: border-box;
+}
+
+[hidden] {
+	display: none !important;
+}

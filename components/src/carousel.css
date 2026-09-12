@@ -5,13 +5,6 @@
 [data-component='carousel'] {
 	--gap: 1rem;
 	position: relative;
-	visibility: hidden;
-	opacity: 0;
-}
-
-[data-component='carousel'][data-ready] {
-	visibility: visible;
-	opacity: 1;
 }
 
 [data-component='carousel'] [data-track] {
@@ -53,10 +46,7 @@
 	pointer-events: none;
 }
 
-/*
- * Screen-reader-only live region for page announcements.
- * TODO: figure out attr or class for theme for sr-only (base.css probably)
- */
+/* Screen-reader-only live region for page announcements */
 [data-component='carousel'] [aria-live] {
 	position: absolute;
 	width: 1px;

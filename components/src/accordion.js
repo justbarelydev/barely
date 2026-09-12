@@ -1,9 +1,11 @@
 /**
  * @justbarely/components - Accordion
  *
- * Native: <details>/<summary>
- * Add the same [name] attr to every <details> element for exclusive.
+ * Two different implementations to choose from depending on your needs:
+ *
+ * Native - <details>/<summary>
  * The browser does everything for you here, Barely just emits an event.
+ * Add the same [name] attr to every <details> element for exclusive.
  *
  *	<div data-component="accordion">
  *		<details open>
@@ -12,7 +14,7 @@
  *		</details>
  *	</div>
  *
- * Custom: [data-trigger]/[data-target] for when <details> won't work.
+ * Custom - [data-trigger]/[data-target]
  * Barely controls toggle, keyboard, and ARIA.
  *
  *	<div data-component="accordion" data-mode="exclusive">
@@ -24,20 +26,28 @@
  *
  * State (set automatically - CSS or WAAPI can hook into them):
  *   [data-open] - panel is open (set on trigger + panel)
- *   [hidden]    - panel is fully closed (set after the close animation ends)
  *
- * Animation-capable, not animated: the component measures --panel-height and
- * toggles state; CSS supplies the transition. For height animation add:
- *   [data-component='accordion'][data-ready] [data-target] {
- *       transition: height 0.3s ease;
- *   }
+ * CSS-driven animation. Since we can't animate from display:none (yet), we use
+ * height: 0 + overflow:hidden + visibility:hidden for closed panels and proper
+ * a11y. On open the height is measured and added as a CSS var that you can use
+ * to animate to.
+ *
+ * Horizontal mode uses flex layout and --panel-width (container - triggers) to
+ * size the panels. It relies on height: auto and the panel width to ensure text
+ * wrapping doesn't leak into the animation.
  *
  * Config attrs:
- *   data-mode - "exclusive" (one open at a time) | "horizontal" (side-by-side)
+ *   data-mode - "exclusive" (one open at a time,) | "horizontal" (side-by-side)
+ *     - note: data-mode=exclusive is only needed for the custom implementation,
+ *       native <details> handles it automatically with the [name] attr
  *
  * Events:
- *   barely:accordionchange -> { open: number[], keys: string[] }
+ *   barely:beforechange -> { key, opening }              (custom toggle)
+ *   barely:afterchange  -> { open: number[], keys: string[] }
  */
+
+import './base.css';
+import './accordion.css';
 
 import {
 	Barely,
@@ -46,10 +56,12 @@ import {
 	children,
 	hasMode,
 	setAttrs,
-	measureHeight,
-	waitForAnimation,
+	setCssVar,
+	setSize,
 	resize,
 } from '@justbarely/engine';
+
+const Accordion = Barely.register('accordion');
 
 // Measure available width for horizontal - container minus triggers
 const measurePanelWidth = (root) => {
@@ -58,10 +70,7 @@ const measurePanelWidth = (root) => {
 	return root.clientWidth - used;
 };
 
-// Register
-const Accordion = Barely.register('accordion');
-
-// ARIA
+// Inject ARIA attributes
 const syncAria = (root) => {
 	children(root, '[data-trigger]').forEach((el) =>
 		setAttrs(el, {
@@ -76,39 +85,34 @@ const syncAria = (root) => {
 			role: 'region',
 			'aria-labelledby': `trigger-${el.dataset.target}`,
 			id: `target-${el.dataset.target}`,
+			'aria-hidden': !el.hasAttribute('data-open'),
 		}),
 	);
 };
 
-// State
 const emitState = (root) => {
 	const all = children(root, '[data-target]');
 	const open = all.filter((el) => el.hasAttribute('data-open'));
-	emit(root, 'barely:accordionchange', {
+	emit(root, 'barely:afterchange', {
 		open: open.map((el) => all.indexOf(el)),
 		keys: open.map((el) => el.dataset?.target || ''),
 	});
 };
 
-// Toggle a single panel and measure --panel-height so CSS can animate.
-const setOpen = (root, panel, trigger, open) => {
+// Set a panel open or closed and mirror data-open on the trigger. Opening
+// measures --height first (horizontal measure from the container).
+const setPanelOpen = (root, panel, trigger, open) => {
 	if (open) {
-		panel.removeAttribute('hidden');
-		if (!hasMode(root, 'horizontal'))
-			measureHeight(panel, '--panel-height');
-		panel.setAttribute('data-open', '');
-		if (trigger) trigger.setAttribute('data-open', '');
+		if (!hasMode(root, 'horizontal')) setSize(panel);
+		setAttrs(panel, { 'data-open': true });
+		if (trigger) setAttrs(trigger, { 'data-open': true });
 	} else {
-		panel.removeAttribute('data-open');
-		if (trigger) trigger.removeAttribute('data-open');
-		waitForAnimation(panel, () => {
-			if (!panel.hasAttribute('data-open'))
-				panel.setAttribute('hidden', '');
-		});
+		setAttrs(panel, { 'data-open': false });
+		if (trigger) setAttrs(trigger, { 'data-open': false });
 	}
 };
 
-// Build a lookup of key { panel, trigger } used by click/key handlers
+// Build a map of `key: { panel, trigger }` for easy lookup with click/key handlers
 const panelMap = (root) => {
 	const triggers = children(root, '[data-trigger]');
 	const map = new Map();
@@ -131,20 +135,21 @@ const toggle = (root, key) => {
 	const { panel, trigger } = entry;
 	const opening = !panel.hasAttribute('data-open');
 
+	emit(root, 'barely:beforechange', { key, opening });
+
 	if (hasMode(root, 'exclusive') && opening) {
 		panels.forEach((e) => {
 			if (e !== entry && e.panel.hasAttribute('data-open'))
-				setOpen(root, e.panel, e.trigger, false);
+				setPanelOpen(root, e.panel, e.trigger, false);
 		});
 	}
 
-	setOpen(root, panel, trigger, opening);
+	setPanelOpen(root, panel, trigger, opening);
 	syncAria(root);
 	emitState(root);
 };
 
-// Event handlers
-const onTriggerClick = (e, trigger, root) =>
+const onTriggerClick = (_, trigger, root) =>
 	toggle(root, trigger.dataset.trigger);
 
 const onTriggerKeydown = (e, trigger, root) => {
@@ -156,29 +161,17 @@ const onTriggerKeydown = (e, trigger, root) => {
 
 // Custom: [data-trigger]/[data-target]
 const initCustom = (root) => {
-	// Auto-add [hidden] to closed panels
-	children(root, '[data-target]').forEach((panel) => {
-		if (!panel.hasAttribute('data-open') && !panel.hasAttribute('hidden'))
-			panel.setAttribute('hidden', '');
-	});
-
 	if (hasMode(root, 'horizontal')) {
 		const setWidth = () =>
-			root.style.setProperty(
-				'--panel-width',
-				measurePanelWidth(root) + 'px',
-			);
+			setCssVar(root, 'panel-width', measurePanelWidth(root), 'px');
 		setWidth();
 		resize(root, setWidth);
-	}
-
-	if (!hasMode(root, 'horizontal'))
+	} else {
+		// Set --height for any open panels so they can animate closed
 		children(root, '[data-target][data-open]').forEach((panel) =>
-			panel.style.setProperty(
-				'--panel-height',
-				panel.scrollHeight + 'px',
-			),
+			setSize(panel),
 		);
+	}
 
 	syncAria(root);
 
@@ -190,21 +183,12 @@ const initCustom = (root) => {
 const initNative = (root) => {
 	const items = children(root, 'details');
 
-	const measurePanel = (detail) => {
-		const panel = detail.querySelector(':scope > :not(summary)');
-		if (panel)
-			detail.style.setProperty(
-				'--panel-height',
-				panel.scrollHeight + 'px',
-			);
-	};
+	const measurePanel = (detail) =>
+		setSize(detail, 'height', ':scope > :not(summary)');
 
 	if (hasMode(root, 'horizontal')) {
 		const setWidth = () =>
-			root.style.setProperty(
-				'--panel-width',
-				measurePanelWidth(root) + 'px',
-			);
+			setCssVar(root, 'panel-width', measurePanelWidth(root), 'px');
 		setWidth();
 		resize(root, setWidth);
 	}
@@ -220,7 +204,7 @@ const initNative = (root) => {
 			if (detail.open) measurePanel(detail);
 
 			const open = children(root, 'details[open]');
-			emit(root, 'barely:accordionchange', {
+			emit(root, 'barely:afterchange', {
 				open: open.map((el) => items.indexOf(el)),
 				keys: open.map(
 					(el) => el.querySelector('summary')?.textContent || '',
@@ -231,7 +215,6 @@ const initNative = (root) => {
 	);
 };
 
-// Mount
 Accordion.onMount((root) => {
 	children(root, 'details').length > 0 ? initNative(root) : initCustom(root);
 });

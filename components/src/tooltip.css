@@ -2,13 +2,11 @@
  * @justbarely/components - Tooltip (structural styles only)
  */
 
-@import './positioning.css';
-
 [data-component='tooltip'] {
 	--offset-x: 0px;
 	--offset-y: 0px;
-	--show-delay: 0s;
-	--hide-delay: 0s;
+	--show-delay: 0ms;
+	--hide-delay: 0ms;
 
 	position: relative;
 }
@@ -18,17 +16,11 @@
 	visibility: hidden;
 	opacity: 0;
 	pointer-events: none;
-	white-space: nowrap;
 	z-index: 1;
-	color: CanvasText;
-	background-color: Canvas;
-	font: message-box;
-	padding: 0.25rem 0.5rem;
-	border: 1px solid;
-	/* Set transition to 0s by default so the delay works if used */
+	/* 0ms default so the delay vars work if the theme sets them */
 	transition:
-		opacity 0s,
-		visibility 0s;
+		opacity 0ms,
+		visibility 0ms;
 	transition-delay: var(--hide-delay);
 }
 
@@ -36,7 +28,7 @@
 	visibility: visible;
 	opacity: 1;
 	transition:
-		opacity 0s,
-		visibility 0s;
+		opacity 0ms,
+		visibility 0ms;
 	transition-delay: var(--show-delay);
 }

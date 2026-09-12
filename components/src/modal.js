@@ -1,8 +1,8 @@
 /**
  * @justbarely/components - Modal
  *
- * Native <dialog> The browser handles backdrop, Esc, focus trap, and ARIA.
- * Barely adds data-open/data-closing for CSS transitions and overlay click.
+ * Native <dialog> - the browser handles backdrop, Esc, focus trap, and ARIA.
+ * Barely adds [data-open] for CSS transitions and overlay click-to-close.
  *
  *   <button data-trigger="newsletter">Subscribe</button>
  *   <dialog data-target="newsletter">
@@ -14,8 +14,11 @@
  *   </dialog>
  *
  * Events:
- *   barely:modalchange -> { open: boolean }
+ *   barely:beforechange -> { open: boolean }
+ *   barely:afterchange  -> { open: boolean }
  */
+
+import './base.css';
 
 import {
 	Barely,
@@ -29,46 +32,40 @@ import {
 const Modal = Barely.register('modal');
 
 const show = (root, dialog) => {
-	if (dialog._barelyOpening || dialog._barelyClosing) return;
-	dialog._barelyOpening = true;
-	setAttrs(dialog, { 'data-closing': false, 'data-opening': true });
+	if (dialog.open) return;
+
+	emit(root, 'barely:beforechange', { open: true });
 	dialog.showModal();
 
-	waitForAnimation(dialog, () => {
-		// Defer one frame so the browser paints the animation's final
-		// frame before we swap attributes. Without this, removing
-		// data-opening cancels the animation before the final frame
-		// is committed, causing a visual snap.
-		requestAnimationFrame(() => {
-			dialog._barelyOpening = false;
-			setAttrs(dialog, { 'data-open': true, 'data-opening': false });
-			emit(root, 'barely:modalchange', { open: true });
-		});
+	// Defer [data-open] a frame so the browser renders the closed state first,
+	// otherwise the potential transition has no starting point.
+	requestAnimationFrame(() => {
+		setAttrs(dialog, { 'data-open': true });
+		emit(root, 'barely:afterchange', { open: true });
 	});
 };
 
 const hide = (root, dialog) => {
-	if (dialog._barelyClosing || dialog._barelyOpening) return;
-	dialog._barelyClosing = true;
-	dialog.setAttribute('data-closing', '');
+	if (!dialog.open) return;
 
-	waitForAnimation(dialog, () => {
-		dialog._barelyClosing = false;
-		dialog.close();
-		setAttrs(dialog, { 'data-open': false, 'data-closing': false });
-		emit(root, 'barely:modalchange', { open: false });
-	});
+	emit(root, 'barely:beforechange', { open: false });
+	setAttrs(dialog, { 'data-open': false });
+	emit(root, 'barely:afterchange', { open: false });
+
+	// Wait for the transition, then close. Essentially skips when there's no
+	// transition.
+	waitForAnimation(dialog, () => dialog.close());
 };
 
 Modal.onMount((root) => {
 	children(root, 'dialog[data-target]').forEach((dialog) => {
-		// Esc key - intercept before the browser closes the dialog
+		// Intercept Esc press before the browser closes the dialog
 		dialog.addEventListener('cancel', (e) => {
 			e.preventDefault();
 			hide(root, dialog);
 		});
 
-		// Form submit (method="dialog") - intercept before native close
+		// Intercept form submit (method="dialog") before the native close
 		const form = dialog.querySelector('form[method="dialog"]');
 		if (form) {
 			form.addEventListener('submit', (e) => {
