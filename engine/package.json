@@ -35,8 +35,8 @@
 	"scripts": {
 		"build": "npm run build:iife && npm run build:esm",
 		"build:iife": "esbuild src/cdn.js --bundle --minify --format=iife --global-name=Barely --outfile=dist/index.js",
-		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js",
-		"watch": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.esm.js --watch",
+		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --external:@justbarely/* --outfile=dist/index.esm.js",
+		"watch": "esbuild src/index.js --bundle --minify --format=esm --external:@justbarely/* --outfile=dist/index.esm.js --watch",
 		"serve": "serve .",
 		"dev": "npm run watch & npm run serve",
 		"prepublishOnly": "npm run build"
