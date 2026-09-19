@@ -24,7 +24,7 @@ export const initIntersection = (Registry) => {
 		// Not lazy - init and attach MO immediately
 		if (!el.hasAttribute('data-lazy')) {
 			attachAttrMO(el, blueprint);
-			initElement(el, Registry);
+			initElement(el);
 			return;
 		}
 
@@ -35,7 +35,7 @@ export const initIntersection = (Registry) => {
 				if (!entry.isIntersecting) return;
 				const blueprint = Registry.get(getComponentName(entry.target));
 				if (blueprint) attachAttrMO(entry.target, blueprint);
-				initElement(entry.target, Registry);
+			initElement(entry.target);
 			},
 			{ once: true },
 		);

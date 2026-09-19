@@ -35,3 +35,35 @@ export const runCleanup = (el) => {
 	Cleanups.get(el)?.forEach((fn) => fn());
 	Cleanups.delete(el);
 };
+
+// Component root currently being mounted (or null)
+let currentOwner = null;
+
+/**
+ * When using listen() on an element, that element's listeners are automatically
+ * cleaned up when the element leaves the DOM. But if you use listen() on the
+ * document or window this doesn't work because document/window never leave.
+ * To fix this, we set a listener owner instead of relying on the element that
+ * the listener is attached to, so all listeners can be torn down properly.
+ *
+ * When a component is mounting, setCleanupOwner() is called with the component
+ * root and a function that mounts the component. Any cleanups registered during
+ * that function will be registered on the component root, and will fire when the
+ * component root leaves the DOM.
+ *
+ * @param {Element} owner - component root to register cleanups on
+ * @param {Function} fn - function to run with the owner set
+ * @returns {*} whatever fn returns
+ */
+export const setCleanupOwner = (owner, fn) => {
+	const prev = currentOwner;
+	currentOwner = owner;
+	try {
+		return fn();
+	} finally {
+		currentOwner = prev;
+	}
+};
+
+// Current cleanup owner
+export const getCleanupOwner = () => currentOwner;

@@ -7,7 +7,7 @@
  */
 
 import { forwardSync } from './helpers/sync';
-import { registerCleanup } from './helpers/cleanup';
+import { registerCleanup, setCleanupOwner } from './helpers/cleanup';
 import { getComponentName } from './helpers/elements';
 import { refract } from './helpers/attr';
 import { emit } from './helpers/emit';
@@ -16,19 +16,25 @@ import { emit } from './helpers/emit';
 export const Registry = new Map();
 
 /**
- * Register components to hook them into the engine and to get those
- * sweet sweet lifecycle methods
+ * Register components to hook them into the engine and get those sweet
+ * lifecycle methods.
  *
- * onMount: fires immediately (or on first intersection if element has [data-lazy])
- * onEffect: fires on watched attribute changes
- * onRefract: transform attribute values before they hit CSS vars
- * refract: copies attribute values to inline CSS variables
+ * Config:
+ *   watch          - attributes to watch for changes
+ *   refract        - attributes copied to inline CSS vars
+ *   watchChildren  - childList selector (or true for the root)
+ *
+ * Hooks (returned):
+ *   onMount(fn)         - runs on init, or first intersection if [data-lazy]
+ *   onEffect(attr, fn)  - runs on watched attribute changes
+ *   onRefract(attr, fn) - transforms a value before it hits its CSS var
+ *   onChildUpdate(fn)   - runs when watchChildren children change
  */
 export function register(
 	name,
 	{ watch = [], refract = [], watchChildren = null } = {},
 ) {
-	// Auto-watch refracted attributes
+	// Refracted attributes have to be watched, so merge them and dedupe
 	const allWatched = [...new Set([...watch, ...refract])];
 	const blueprint = {
 		watch: allWatched,
@@ -74,10 +80,16 @@ export const refractValue = (blueprint, key, val) => {
 
 /**
  * Initialize a component element when it first appears in the DOM.
- * Fires effects, sets CSS vars for refracted attrs, forwards to data-sync
- * subscribers, calls onMount, and sets [data-ready].
+ * 1. Reconcile watched attributes (refract, effects, data-sync)
+ * 2. Set instance data-watch/data-refract vars
+ * 3. Run onMount
+ * 4. Attach the watchChildren observer
+ * 5. Mark [data-ready]
+ * 6. Emit barely:mount
+ *
+ * @param {Element} el - component root element
  */
-export const initElement = (el, Registry) => {
+export const initElement = (el) => {
 	const blueprint = Registry.get(getComponentName(el));
 	if (!blueprint) return;
 
@@ -106,7 +118,7 @@ export const initElement = (el, Registry) => {
 	});
 
 	if (blueprint.onMount) {
-		const teardown = blueprint.onMount(el);
+		const teardown = setCleanupOwner(el, () => blueprint.onMount(el));
 		if (typeof teardown === 'function') registerCleanup(el, teardown);
 	}
 

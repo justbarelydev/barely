@@ -17,7 +17,7 @@ import { refract } from './helpers/attr';
 import { runCleanup } from './helpers/cleanup';
 import { emit } from './helpers/emit';
 
-// Per-element, per-attribute write counter - catches runaway loops
+// Per-element, per-attribute counter - catches runaway write loops
 const RUNAWAY_LIMIT = 25;
 const _counts = new WeakMap();
 
@@ -159,7 +159,7 @@ function initComponent(node, Registry) {
 	if (name && Registry.has(name)) {
 		const blueprint = Registry.get(name);
 		attachAttrMO(node, blueprint);
-		initElement(node, Registry);
+		initElement(node);
 	}
 }
 
@@ -177,6 +177,18 @@ function tryBindSync(el) {
 function bindSyncChildren(node) {
 	children(node, SYNC).forEach((el) => bindSyncElement(el));
 }
+
+// Write CSS vars + forward sync for an element's data-refract attrs
+const applyRefract = (el) => {
+	const refractAttrs = el.dataset.refract?.split(/\s+/) ?? [];
+	for (const attr of refractAttrs) {
+		const val = el.getAttribute(attr);
+		if (val != null) {
+			refract(el, attr, val);
+			forwardSync(el, attr, val);
+		}
+	}
+};
 
 /**
  * This MO watches for HTML being added or removed (childList only)
@@ -222,15 +234,7 @@ export const initMutation = (Registry) => {
 	children(document, '[data-watch], [data-refract]').forEach((el) => {
 		if (!el.hasAttribute('data-component')) {
 			attachAttrMO(el, { watch: [], refract: [], effects: {} });
-			// Set initial CSS vars + forward sync for refracted attrs
-			const refract = el.dataset.refract?.split(/\s+/) ?? [];
-			refract.forEach((attr) => {
-				const val = el.getAttribute(attr);
-				if (val != null) {
-					refract(el, attr, val);
-					forwardSync(el, attr, val);
-				}
-			});
+			applyRefract(el);
 			el.setAttribute('data-ready', '');
 		}
 	});
@@ -242,14 +246,7 @@ export const initMutation = (Registry) => {
 				bindSyncElement(target);
 			} else if (!target.hasAttribute('data-component')) {
 				attachAttrMO(target, { watch: [], refract: [], effects: {} });
-				const refract = target.dataset.refract?.split(/\s+/) ?? [];
-				refract.forEach((attr) => {
-					const val = target.getAttribute(attr);
-					if (val != null) {
-						refract(target, attr, val);
-						forwardSync(target, attr, val);
-					}
-				});
+				applyRefract(target);
 				target.setAttribute('data-ready', '');
 			}
 		}

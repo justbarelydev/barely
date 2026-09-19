@@ -1,14 +1,14 @@
 /**
  * @justbarely/engine - pooled IntersectionObserver and ResizeObserver
  *
- * Pooling comes up a few times in Barely because it rules. For observers,
+ * Pooling comes up a few times in Barely because it rocks. For observers,
  * if the options object matches an existing observer's options, then it just
  * adds the new elements to the existing observer.
  *
  * Less observers, MAXIMUM PERFORMANCE.
  */
 
-import { registerCleanup } from './cleanup';
+import { registerCleanup, getCleanupOwner } from './cleanup';
 
 const IOPool = new Map(); // shared observers by config key
 const IOEntries = new WeakMap(); // el → { fn, once, key }
@@ -42,8 +42,10 @@ export const observe = (el, fn, opts = {}) => {
 					const config = IOEntries.get(entry.target);
 					if (!config) continue;
 					config.fn(entry);
-					if (config.once)
+					if (config.once) {
 						IOPool.get(config.key)?.unobserve(entry.target);
+						IOEntries.delete(entry.target);
+					}
 				}
 			}, ioOpts),
 		);
@@ -52,11 +54,15 @@ export const observe = (el, fn, opts = {}) => {
 	IOEntries.set(el, { fn, once, key });
 	IOPool.get(key).observe(el);
 
-	return () => {
+	const off = () => {
 		const config = IOEntries.get(el);
 		IOPool.get(config?.key ?? key)?.unobserve(el);
 		IOEntries.delete(el);
 	};
+	// Auto-cleanup like listen(): owned by the mounting component when called
+	// inside onMount, otherwise keyed on the observed element itself.
+	registerCleanup(getCleanupOwner() ?? el, off);
+	return off;
 };
 
 /**
@@ -83,7 +89,7 @@ export const resize = (root, el, fn) => {
 	// If the element is already being observed, just swap the callback
 	if (ROCallbacks.has(el)) {
 		ROCallbacks.set(el, fn);
-		registerCleanup(root, () => {
+		registerCleanup(getCleanupOwner() ?? root, () => {
 			ROPool.get(key)?.unobserve(el);
 			ROCallbacks.delete(el);
 		});
@@ -106,7 +112,7 @@ export const resize = (root, el, fn) => {
 	ROCallbacks.set(el, fn);
 	ROPool.get(key).observe(el);
 
-	registerCleanup(root, () => {
+	registerCleanup(getCleanupOwner() ?? root, () => {
 		ROPool.get(key)?.unobserve(el);
 		ROCallbacks.delete(el);
 	});

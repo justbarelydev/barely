@@ -4,17 +4,19 @@
  * You can always use addEventListener, but this is more convenient.
  */
 
-import { registerCleanup } from './cleanup';
+import { registerCleanup, getCleanupOwner } from './cleanup';
 
 /**
- * Handy little addEventListener replacement with auto-cleanup and optional
- * selector delegation.
+ * Handy little addEventListener replacement that allows for multiple events,
+ * has auto-cleanup, and optional selector delegation.
  *
  *   listen(el, 'click', fn): direct on el
  *   listen(el, ['mouseenter', 'focus'], fn): multiple events
  *   listen(root, 'click', fn, '[data-nav]'): delegated, scoped to root
  *
  * - Attaches directly to the root, so it's garbage collected with it
+ * - Inside onMount, the cleanup is owned by the component root, so even
+ *   document/window listeners are removed when the component leaves the DOM
  * - Returns an off() function for manual cleanup
  * - Non-bubbling events (scroll, focus, mouseenter) fire only on root itself
  * - Nested component events are blocked from triggering outer component handlers
@@ -49,6 +51,9 @@ export const listen = (root, event, handler, selector) => {
 	root.addEventListener(event, _handler);
 
 	const cleanup = () => root.removeEventListener(event, _handler);
-	registerCleanup(root, cleanup);
+
+	// Register cleanup to the component currently mounting (if there is one) so
+	// document/window listeners are removed when the component leaves the DOM.
+	registerCleanup(getCleanupOwner() ?? root, cleanup);
 	return cleanup;
 };
