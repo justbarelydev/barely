@@ -1,12 +1,30 @@
 {
 	"name": "@justbarely/core",
 	"version": "0.1.2",
+	"description": "Pure, environment-agnostic math and utility functions for @justbarely",
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/justbarelydev/barely.git",
+		"directory": "core"
+	},
+	"homepage": "https://github.com/justbarelydev/barely/tree/main/core#readme",
+	"bugs": {
+		"url": "https://github.com/justbarelydev/barely/issues"
+	},
 	"type": "module",
+	"publishConfig": {
+		"access": "public"
+	},
 	"main": "./dist/index.js",
 	"exports": {
 		".": "./dist/index.js"
 	},
 	"scripts": {
-		"build": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.js"
+		"build": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.js",
+		"prepublishOnly": "npm run build"
 	}
 }
