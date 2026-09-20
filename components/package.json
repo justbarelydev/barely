@@ -27,6 +27,7 @@
 	"module": "./dist/index.esm.js",
 	"unpkg": "./dist/index.js",
 	"jsdelivr": "./dist/index.js",
+	"style": "./dist/index.css",
 	"exports": {
 		".": {
 			"import": "./dist/index.esm.js",

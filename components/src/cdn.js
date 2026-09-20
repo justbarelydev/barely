@@ -14,10 +14,5 @@ import './tooltip';
 import './popover';
 import './dropdown';
 
-if (typeof document !== 'undefined') {
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', () => Barely.init());
-	} else {
-		Barely.init();
-	}
-}
+// init() defers itself until the DOM is ready (engine-owned timing).
+Barely.init();
