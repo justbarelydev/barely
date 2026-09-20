@@ -35,7 +35,7 @@ export const initIntersection = (Registry) => {
 				if (!entry.isIntersecting) return;
 				const blueprint = Registry.get(getComponentName(entry.target));
 				if (blueprint) attachAttrMO(entry.target, blueprint);
-			initElement(entry.target);
+				initElement(entry.target);
 			},
 			{ once: true },
 		);
