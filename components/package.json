@@ -1,12 +1,42 @@
 {
 	"name": "@justbarely/components",
 	"version": "0.4.0",
+	"description": "Native-first UI interaction components for @justbarely",
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/justbarelydev/barely.git",
+		"directory": "components"
+	},
+	"homepage": "https://github.com/justbarelydev/barely/tree/main/components#readme",
+	"bugs": {
+		"url": "https://github.com/justbarelydev/barely/issues"
+	},
 	"type": "module",
+	"dependencies": {
+		"@justbarely/core": "^0.1.2",
+		"@justbarely/engine": "^0.5.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"main": "./dist/index.js",
+	"module": "./dist/index.esm.js",
+	"unpkg": "./dist/index.js",
+	"jsdelivr": "./dist/index.js",
 	"exports": {
-		".": "./dist/index.js"
+		".": {
+			"import": "./dist/index.esm.js",
+			"default": "./dist/index.esm.js"
+		}
 	},
 	"scripts": {
-		"build": "esbuild src/index.js --bundle --minify --format=esm --outfile=dist/index.js"
+		"build": "npm run build:iife && npm run build:esm",
+		"build:iife": "esbuild src/cdn.js --bundle --minify --format=iife --outfile=dist/index.js",
+		"build:esm": "esbuild src/index.js --bundle --minify --format=esm --external:@justbarely/* --outfile=dist/index.esm.js",
+		"prepublishOnly": "npm run build"
 	}
 }

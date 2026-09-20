@@ -14,6 +14,11 @@
  *		</details>
  *	</div>
  *
+ * Animation note: There is no fully-supported way to animate details/summary.
+ * If you want to animate the native accordion, you can use @starting-style +
+ * ::details-content { transition: height 0.3s; transition-behavior: allow-discrete; }
+ * which are both baseline newly available (not widely supported yet).
+ *
  * Custom - [data-trigger]/[data-target]
  * Barely controls toggle, keyboard, and ARIA.
  *
@@ -24,10 +29,10 @@
  *		<div data-target="a2">Content 2</div>
  *	</div>
  *
- * State (set automatically - CSS or WAAPI can hook into them):
+ * State (set automatically, CSS or WAAPI can hook into them):
  *   [data-open] - panel is open (set on trigger + panel)
  *
- * CSS-driven animation. Since we can't animate from display:none (yet), we use
+ * CSS-driven animation: since we can't animate from display:none (yet), we use
  * height: 0 + overflow:hidden + visibility:hidden for closed panels and proper
  * a11y. On open the height is measured and added as a CSS var that you can use
  * to animate to.
@@ -37,13 +42,14 @@
  * wrapping doesn't leak into the animation.
  *
  * Config attrs:
- *   data-mode - "exclusive" (one open at a time,) | "horizontal" (side-by-side)
+ *   data-mode - "exclusive" (one open at a time) | "horizontal" (side-by-side)
  *     - note: data-mode=exclusive is only needed for the custom implementation,
  *       native <details> handles it automatically with the [name] attr
  *
  * Events:
- *   barely:beforechange -> { key, opening }              (custom toggle)
- *   barely:afterchange  -> { open: number[], keys: string[] }
+ *   barely:beforechange -> { key, open, trigger, target }                    (custom)
+ *   barely:afterchange  -> { key, open, trigger, target, openPanels }        (custom)
+ *                          { open, detail, summary, openDetails }            (native)
  */
 
 import './base.css';
@@ -90,15 +96,6 @@ const syncAria = (root) => {
 	);
 };
 
-const emitState = (root) => {
-	const all = children(root, '[data-target]');
-	const open = all.filter((el) => el.hasAttribute('data-open'));
-	emit(root, 'barely:afterchange', {
-		open: open.map((el) => all.indexOf(el)),
-		keys: open.map((el) => el.dataset?.target || ''),
-	});
-};
-
 // Set a panel open or closed and mirror data-open on the trigger. Opening
 // measures --height first (horizontal measure from the container).
 const setPanelOpen = (root, panel, trigger, open) => {
@@ -133,20 +130,26 @@ const toggle = (root, key) => {
 	if (!entry) return;
 
 	const { panel, trigger } = entry;
-	const opening = !panel.hasAttribute('data-open');
+	const open = !panel.hasAttribute('data-open');
 
-	emit(root, 'barely:beforechange', { key, opening });
+	emit(root, 'barely:beforechange', { key, open, trigger, target: panel });
 
-	if (hasMode(root, 'exclusive') && opening) {
+	if (hasMode(root, 'exclusive') && open) {
 		panels.forEach((e) => {
 			if (e !== entry && e.panel.hasAttribute('data-open'))
 				setPanelOpen(root, e.panel, e.trigger, false);
 		});
 	}
 
-	setPanelOpen(root, panel, trigger, opening);
+	setPanelOpen(root, panel, trigger, open);
 	syncAria(root);
-	emitState(root);
+	emit(root, 'barely:afterchange', {
+		key,
+		open,
+		trigger,
+		target: panel,
+		openPanels: children(root, '[data-target][data-open]'),
+	});
 };
 
 const onTriggerClick = (_, trigger, root) =>
@@ -181,34 +184,17 @@ const initCustom = (root) => {
 
 // Native: <details>/<summary> - browser handles toggle, name attr for exclusive
 const initNative = (root) => {
-	const items = children(root, 'details');
-
-	const measurePanel = (detail) =>
-		setSize(detail, 'height', ':scope > :not(summary)');
-
-	if (hasMode(root, 'horizontal')) {
-		const setWidth = () =>
-			setCssVar(root, 'panel-width', measurePanelWidth(root), 'px');
-		setWidth();
-		resize(root, setWidth);
-	}
-
-	// Initially open
-	children(root, 'details[open]').forEach(measurePanel);
-
 	root.addEventListener(
 		'toggle',
 		(e) => {
 			const detail = e.target;
 			if (detail.tagName !== 'DETAILS') return;
-			if (detail.open) measurePanel(detail);
 
-			const open = children(root, 'details[open]');
 			emit(root, 'barely:afterchange', {
-				open: open.map((el) => items.indexOf(el)),
-				keys: open.map(
-					(el) => el.querySelector('summary')?.textContent || '',
-				),
+				open: detail.open,
+				detail,
+				summary: detail.querySelector(':scope > summary'),
+				openDetails: children(root, 'details[open]'),
 			});
 		},
 		true,

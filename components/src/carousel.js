@@ -26,7 +26,9 @@
  *   data-can-next  - next page available (boolean)
  *
  * Events:
- *   barely:pagechange -> { page, total }
+ *   barely:beforechange -> { index, child, track }               (arrow nav)
+ *   barely:afterchange  -> { page, total, index, child, track }  (scroll settle)
+ *   barely:pagechange   -> { page, total }
  *
  * Note: update the --gap CSS variable to match your track gap for accurate
  * pagination calculations.
@@ -55,7 +57,7 @@ export const Carousel = Barely.register('carousel', {
 // Called on mount, resize, items-to-show change, and childList mutations
 const cacheOffsets = (root, track) => {
 	const trackRect = track.getBoundingClientRect();
-	root._offsets = [...track.children].map((el) => {
+	root._barelyOffsets = [...track.children].map((el) => {
 		const rect = el.getBoundingClientRect();
 		return { left: rect.left - trackRect.left, width: rect.width };
 	});
@@ -65,7 +67,7 @@ const cacheOffsets = (root, track) => {
 // Used by go() so it advances from actual scroll position, not from
 // [data-index] (which avoids the bidirectional feedback loop).
 const getCurrentIndex = (root, track, centerMode) => {
-	const offsets = root._offsets;
+	const offsets = root._barelyOffsets;
 	const { scrollLeft, clientWidth } = track;
 	// 1px tolerance to avoid sub-pixel rounding errors on high-DPI displays
 	// (because getBoundingClientRect() returns floats but offsetLeft is an int)
@@ -91,7 +93,7 @@ const getCurrentIndex = (root, track, centerMode) => {
 
 // Target scroll position for a child index, clamped to valid range.
 const scrollTarget = (root, track, idx) => {
-	const offsets = root._offsets;
+	const offsets = root._barelyOffsets;
 	const { left, width } = offsets[idx];
 	const target = hasMode(root, 'center')
 		? left - (track.clientWidth - width) / 2
@@ -101,10 +103,10 @@ const scrollTarget = (root, track, idx) => {
 };
 
 // Navigate by advancing items-to-scroll items from the current scroll position
-// Sets _skip so onEffect doesn't double-scroll, then calls scrollTo directly
+// Sets _barelySkip so onEffect doesn't double-scroll, then calls scrollTo directly
 // Never reads [data-index] to avoid feedback loops
 const go = (root, dir) => {
-	const track = root._track;
+	const track = root._barelyTrack;
 	if (!track) return;
 
 	const itemsToScroll = root.getAttribute('data-items-to-scroll');
@@ -114,7 +116,13 @@ const go = (root, dir) => {
 	const index = getCurrentIndex(root, track, centerMode);
 	const next = clamp(index + dir * count, 0, track.children.length - 1);
 
-	root._skip = true;
+	emit(root, 'barely:beforechange', {
+		index: next,
+		child: track.children[next],
+		track,
+	});
+
+	root._barelySkip = true;
 	root.setAttribute('data-index', next);
 	track.scrollTo({
 		left: scrollTarget(root, track, next),
@@ -124,11 +132,11 @@ const go = (root, dir) => {
 Carousel.onMount((root) => {
 	const track = children(root, '[data-track]')[0];
 	if (!track) return;
-	root._track = track;
+	root._barelyTrack = track;
 
 	setAttrs(root, { role: 'region', 'aria-roledescription': 'carousel' });
 
-	// Inject live region for even more ARIA
+	// Inject an aria-live region for page announcements
 	const liveRegion = document.createElement('div');
 	liveRegion.setAttribute('aria-live', 'polite');
 	liveRegion.setAttribute('aria-atomic', 'true');
@@ -169,10 +177,10 @@ Carousel.onMount((root) => {
 
 			// Sync [data-index] from scroll position (go() reads scroll, not attr)
 			// Skip during init to avoid overwriting existing [data-index]
-			if (!root._initing) {
+			if (!root._barelyIniting) {
 				const current = toInt(root.getAttribute('data-index'), -1);
 				if (index !== current) {
-					root._skip = true;
+					root._barelySkip = true;
 					root.setAttribute('data-index', index);
 				}
 			}
@@ -185,14 +193,14 @@ Carousel.onMount((root) => {
 	})();
 
 	const emitPageChange = debounce(() => {
-		// If _stamp has changed since the debounce started, an external
+		// If _barelyStamp has changed since the debounce started, an external
 		// [data-index] set happened while we were waiting. Skip overwrite.
-		const stamp = root._stamp;
+		const stamp = root._barelyStamp;
 		const index = getCurrentIndex(root, track, centerMode);
-		if (root._stamp === stamp) {
+		if (root._barelyStamp === stamp) {
 			const current = toInt(root.getAttribute('data-index'), -1);
 			if (index !== current) {
-				root._skip = true;
+				root._barelySkip = true;
 				root.setAttribute('data-index', index);
 			}
 		}
@@ -200,6 +208,13 @@ Carousel.onMount((root) => {
 		emit(root, 'barely:pagechange', {
 			page: toPage(track.scrollLeft, track.clientWidth) + 1,
 			total: pageCount(track.scrollWidth, track.clientWidth),
+		});
+		emit(root, 'barely:afterchange', {
+			page: toPage(track.scrollLeft, track.clientWidth) + 1,
+			total: pageCount(track.scrollWidth, track.clientWidth),
+			index,
+			child: track.children[index],
+			track,
 		});
 	});
 
@@ -230,10 +245,10 @@ Carousel.onMount((root) => {
 	});
 
 	// Store syncState for onChildrenUpdate
-	root._syncState = syncState;
+	root._barelySyncState = syncState;
 
 	// Init
-	root._initing = true;
+	root._barelyIniting = true;
 	syncState();
 
 	// Respect existing [data-index]
@@ -243,7 +258,7 @@ Carousel.onMount((root) => {
 			0,
 			track.children.length - 1,
 		);
-		root._skip = true;
+		root._barelySkip = true;
 		root.setAttribute('data-index', presetIndex);
 		track.scrollTo({
 			left: scrollTarget(root, track, presetIndex),
@@ -253,19 +268,19 @@ Carousel.onMount((root) => {
 		// Default to 0 index
 		root.setAttribute('data-index', '0');
 	}
-	root._initing = false;
+	root._barelyIniting = false;
 });
 
 // Rebuild cache when [data-items-to-show] changes
 Carousel.onEffect('data-items-to-show', (root) => {
-	const track = root._track;
+	const track = root._barelyTrack;
 	if (!track) return;
 	cacheOffsets(root, track);
 });
 
 // Handle [data-index] changes
 Carousel.onEffect('data-index', (root, value) => {
-	const track = root._track;
+	const track = root._barelyTrack;
 	if (!track) return;
 
 	const index = clamp(toInt(value, 0), 0, track.children.length - 1);
@@ -281,13 +296,13 @@ Carousel.onEffect('data-index', (root, value) => {
 
 	// Skip scroll when set internally from go() or emitPageChange to avoid an
 	// attr update loop
-	if (root._skip) {
-		root._skip = false;
+	if (root._barelySkip) {
+		root._barelySkip = false;
 		return;
 	}
 
 	// Bump stamp so pending emitPageChange won't overwrite
-	root._stamp = (root._stamp || 0) + 1;
+	root._barelyStamp = (root._barelyStamp || 0) + 1;
 
 	if (track.scrollWidth <= track.clientWidth + 5) return;
 
@@ -298,8 +313,8 @@ Carousel.onEffect('data-index', (root, value) => {
 
 // Rebuild cache when children change
 Carousel.onChildUpdate((root) => {
-	const track = root._track;
+	const track = root._barelyTrack;
 	if (!track) return;
 	cacheOffsets(root, track);
-	root._syncState?.();
+	root._barelySyncState?.();
 });

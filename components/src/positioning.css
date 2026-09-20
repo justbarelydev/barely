@@ -1,22 +1,22 @@
-/**
- * @justbarely/components - Shared nested positioning (structural)
+/*
+ * @justbarely/components - Shared structural positioning styles
  *
- * Base placement rules for tooltip and dropdown. Both position in-tree
- * (nested) rather than body-appended - the coordinate model that native
- * CSS anchor positioning (anchor(), position-area) formalizes.
+ * Base placement rules for any element carrying [data-target] +
+ * [data-placement]. Dropdown and tooltip use these, but the hook is generic so
+ * any element can use it. Both are positioned in-tree (nested) rather than
+ * body-appended, matching the coordinate model that native CSS anchor
+ * positioning uses.
  *
  * Components set position: absolute and lifecycle states themselves.
- * Selectors are scoped to [data-target] (tooltip) and [data-menu] (dropdown)
- * so that the wrapper's data-placement config attribute does not trigger
- * positioning CSS.
+ * Selectors are scoped to [data-target] so the wrapper's data-placement
+ * config attribute does not trigger positioning CSS.
  *
  * CSS var contract:
  *   --shift-x / --shift-y  - collision shift (JS writes px, e.g. "12px")
  *   --offset-x / --offset-y - gap from trigger (refracted from data-offset-*)
  */
 
-[data-target][data-placement='top'],
-[data-menu][data-placement='top'] {
+[data-target][data-placement='top'] {
 	bottom: calc(100% + var(--offset-y, 0px));
 	left: 50%;
 	transform: translate(
@@ -25,8 +25,7 @@
 	);
 }
 
-[data-target][data-placement='bottom'],
-[data-menu][data-placement='bottom'] {
+[data-target][data-placement='bottom'] {
 	top: calc(100% + var(--offset-y, 0px));
 	left: 50%;
 	transform: translate(
@@ -35,8 +34,7 @@
 	);
 }
 
-[data-target][data-placement='left'],
-[data-menu][data-placement='left'] {
+[data-target][data-placement='left'] {
 	right: calc(100% + var(--offset-x, 0px));
 	top: 50%;
 	transform: translate(
@@ -45,8 +43,7 @@
 	);
 }
 
-[data-target][data-placement='right'],
-[data-menu][data-placement='right'] {
+[data-target][data-placement='right'] {
 	left: calc(100% + var(--offset-x, 0px));
 	top: 50%;
 	transform: translate(

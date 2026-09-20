@@ -14,11 +14,12 @@
  *   </dialog>
  *
  * Events:
- *   barely:beforechange -> { open: boolean }
- *   barely:afterchange  -> { open: boolean }
+ *   barely:beforechange -> { open, dialog }
+ *   barely:afterchange  -> { open, dialog }
  */
 
 import './base.css';
+import './modal.css';
 
 import {
 	Barely,
@@ -34,23 +35,23 @@ const Modal = Barely.register('modal');
 const show = (root, dialog) => {
 	if (dialog.open) return;
 
-	emit(root, 'barely:beforechange', { open: true });
+	emit(root, 'barely:beforechange', { open: true, dialog });
 	dialog.showModal();
 
 	// Defer [data-open] a frame so the browser renders the closed state first,
 	// otherwise the potential transition has no starting point.
 	requestAnimationFrame(() => {
 		setAttrs(dialog, { 'data-open': true });
-		emit(root, 'barely:afterchange', { open: true });
+		emit(root, 'barely:afterchange', { open: true, dialog });
 	});
 };
 
 const hide = (root, dialog) => {
 	if (!dialog.open) return;
 
-	emit(root, 'barely:beforechange', { open: false });
+	emit(root, 'barely:beforechange', { open: false, dialog });
 	setAttrs(dialog, { 'data-open': false });
-	emit(root, 'barely:afterchange', { open: false });
+	emit(root, 'barely:afterchange', { open: false, dialog });
 
 	// Wait for the transition, then close. Essentially skips when there's no
 	// transition.

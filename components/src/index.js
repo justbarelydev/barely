@@ -5,5 +5,6 @@ import './modal';
 import './carousel';
 import './tooltip';
 import './popover';
+import './dropdown';
 
 Barely.init();

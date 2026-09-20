@@ -39,8 +39,8 @@
  *   data-focus             - element inside popover to focus on open
  *
  * Events:
- *   barely:beforechange -> { open: boolean }
- *   barely:afterchange  -> { open: boolean }
+ *   barely:beforechange -> { open, target }
+ *   barely:afterchange  -> { open, target }
  */
 
 import './base.css';
@@ -214,7 +214,7 @@ const show = (root) => {
 		});
 	}
 
-	emit(root, 'barely:beforechange', { open: true });
+	emit(root, 'barely:beforechange', { open: true, target });
 
 	// Fresh targets need a reflow + frame before [data-open], or the enter
 	// transition has no starting point.
@@ -231,7 +231,7 @@ const show = (root) => {
 		if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
 		el.focus();
 
-		emit(root, 'barely:afterchange', { open: true });
+		emit(root, 'barely:afterchange', { open: true, target });
 	});
 };
 
@@ -240,10 +240,10 @@ const hide = (root, returnFocus = true) => {
 	if (!target) return;
 	if (!target.hasAttribute('data-open')) return;
 
-	emit(root, 'barely:beforechange', { open: false });
+	emit(root, 'barely:beforechange', { open: false, target });
 	setAttrs(target, { 'data-open': false, 'aria-hidden': true });
 	setAttrs(root, { 'aria-expanded': 'false' });
-	emit(root, 'barely:afterchange', { open: false });
+	emit(root, 'barely:afterchange', { open: false, target });
 
 	if (returnFocus) root.focus();
 

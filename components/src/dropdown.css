@@ -1,0 +1,25 @@
+/*
+ * @justbarely/components - Dropdown structural styles
+ */
+
+[data-component='dropdown'] {
+	--offset-x: 0px;
+	--offset-y: 0px;
+
+	position: relative;
+	display: inline-block;
+}
+
+[data-component='dropdown'] [data-target] {
+	position: absolute;
+	z-index: 100;
+	opacity: 0;
+	visibility: hidden;
+}
+
+/* Open state: keep the target rendered and measurable for positioning, but out
+of the a11y tree and pointer events. */
+[data-component='dropdown'] [data-target][data-open] {
+	opacity: 1;
+	visibility: visible;
+}

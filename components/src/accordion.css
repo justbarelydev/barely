@@ -1,5 +1,5 @@
-/**
- * @justbarely/components - Accordion
+/*
+ * @justbarely/components - Accordion structural styles
  */
 
 [data-component='accordion'] {
@@ -9,19 +9,18 @@
 
 	/* Vertical (default) */
 	&:not([data-mode~='horizontal']) {
-		& [data-trigger] {
+		& > [data-trigger] {
 			display: block;
 		}
 
-		/* overflow: hidden keeps the animated height exact */
-		& [data-target] {
+		& > [data-target] {
 			overflow: hidden;
 			height: 0;
 			visibility: hidden;
 		}
 
-		& [data-target][data-open] {
-			height: var(--height);
+		& > [data-target][data-open] {
+			height: var(--height, auto);
 			visibility: visible;
 		}
 	}
@@ -31,19 +30,20 @@
 		display: flex;
 		align-items: stretch;
 
-		& [data-trigger] {
+		& > [data-trigger] {
 			flex-shrink: 0;
 		}
 
-		& [data-target] > * {
+		& > [data-target] > * {
 			width: var(--panel-width);
 		}
 
-		/* Closed by default - 0 width and out and hidden (for a11y).
-		   display:block keeps it in the flex flow (avoiding display:none);
-		   height:auto keeps the triggers from collapsing when all panels are
-		   closed. */
-		& [data-target] {
+		/*
+		 * Closed by default (no width/height and hidden for a11y).
+		 * display: block; keeps it in the flex flow, and height: auto; keeps the
+		 * triggers from collapsing when all panels are closed.
+		*/
+		& > [data-target] {
 			display: block;
 			max-width: 0;
 			height: auto;
@@ -51,8 +51,8 @@
 			visibility: hidden;
 		}
 
-		/* Open - expands to --panel-width measured on mount + resize */
-		& [data-target][data-open] {
+		/* Open to the refracted width var */
+		& > [data-target][data-open] {
 			flex: 0 0 var(--panel-width);
 			max-width: var(--panel-width);
 			overflow: hidden;

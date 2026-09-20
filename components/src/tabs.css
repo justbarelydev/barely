@@ -1,4 +1,4 @@
-/**
+/*
  * @justbarely/components - Tabs
  */
 
@@ -14,12 +14,12 @@
 	visibility: visible;
 }
 
-/* Buttons don't inherit the page font - match surrounding text */
+/* Buttons don't inherit the page font by default, set to inherit */
 [data-component='tabs'] [data-trigger] {
 	font: inherit;
 }
 
-/** Vertical: stack tabs on the left, panels on the right */
+/* Vertical: stack tabs on the left, panels on the right */
 [data-component='tabs'][data-mode~='vertical'] {
 	display: flex;
 }

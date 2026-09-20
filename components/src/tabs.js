@@ -22,8 +22,8 @@
  *   	- for panels on left/tabs on right use CSS flex-direction: row-reverse
  *
  * Events:
- *   barely:beforechange -> { active: key, previous }   (before sync)
- *   barely:afterchange  -> { active: key, previous }   (after sync)
+ *   barely:beforechange -> { active, previous, trigger, target }  (before sync)
+ *   barely:afterchange  -> { active, previous, trigger, target }  (after sync)
  */
 
 import './base.css';
@@ -85,9 +85,25 @@ const activate = (root, key) => {
 // Skip initial onEffect call with previous === null, emit before/after change
 Tabs.onEffect('data-active', (root, key, previous) => {
 	if (previous === null) return;
-	emit(root, 'barely:beforechange', { active: key, previous });
+	const trigger = children(root, '[data-trigger]').find(
+		(el) => el.dataset.trigger === key,
+	);
+	const target = children(root, '[data-target]').find(
+		(el) => el.dataset.target === key,
+	);
+	emit(root, 'barely:beforechange', {
+		active: key,
+		previous,
+		trigger,
+		target,
+	});
 	sync(root, key);
-	emit(root, 'barely:afterchange', { active: key, previous });
+	emit(root, 'barely:afterchange', {
+		active: key,
+		previous,
+		trigger,
+		target,
+	});
 });
 
 // a11y keyboard navigation - arrow keys, home/end, enter/space
@@ -129,18 +145,20 @@ const onKeydown = (e, tab, root) => {
 };
 
 Tabs.onMount((root) => {
-	// Set initial state. Root [data-active] takes precedence, otherwise the first
-	// child. With a key, hoist it to root and sync children/ARIA. Without a
-	// key, inject ARIA only.
+	// Set initial state. Root [data-active] takes precedence, then the first
+	// [data-active] child, then the first trigger. A tablist always has one
+	// selected tab - starting unselected would swallow the first click, because
+	// onEffect skips changes where previous is null.
 	const key =
 		root.dataset.active ||
-		children(root, '[data-trigger][data-active]')[0]?.dataset.trigger;
+		children(root, '[data-trigger][data-active]')[0]?.dataset.trigger ||
+		children(root, '[data-trigger]')[0]?.dataset.trigger;
 
 	if (key) {
 		setAttrs(root, { 'data-active': key });
-		sync(root, key); // MO not attached yet, onEffect won't fire
+		sync(root, key); // onEffect skips null previous, so sync directly
 	} else {
-		syncAria(root);
+		syncAria(root); // no triggers at all
 	}
 
 	listen(
