@@ -16,6 +16,7 @@ import { initElement, refractValue } from './registry';
 import { refract } from './helpers/attr';
 import { runCleanup } from './helpers/cleanup';
 import { emit } from './helpers/emit';
+import { observe } from './helpers/observe';
 
 // Per-element, per-attribute counter - catches runaway write loops
 const RUNAWAY_LIMIT = 25;
@@ -156,11 +157,29 @@ function teardownTree(root) {
 // Init and attach MO to dynamically added registered components
 function initComponent(node, Registry) {
 	const name = getComponentName(node);
-	if (name && Registry.has(name)) {
-		const blueprint = Registry.get(name);
-		attachAttrMO(node, blueprint);
-		initElement(node);
+	if (!name || !Registry.has(name)) return;
+
+	const blueprint = Registry.get(name);
+
+	// data-lazy defers init until the element scrolls into view, just like the
+	// initial scan (intersection.js). This prevents an early init from eagerly
+	// mounting lazy components.
+	if (node.hasAttribute('data-lazy')) {
+		observe(
+			node,
+			(entry) => {
+				if (!entry.isIntersecting) return;
+				const bp = Registry.get(getComponentName(entry.target));
+				if (bp) attachAttrMO(entry.target, bp);
+				initElement(entry.target);
+			},
+			{ once: true },
+		);
+		return;
 	}
+
+	attachAttrMO(node, blueprint);
+	initElement(node);
 }
 
 // Init and slap MO on dynamically added components' children
