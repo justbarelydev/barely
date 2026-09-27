@@ -31,7 +31,8 @@
  * but you can scope it to a container with [data-container=".selector"].
  *
  * Config attrs:
- *   data-placement         - top | right | bottom | left (default: bottom)
+ *   data-placement         - top | right | bottom | left, or a corner
+ *                            (top-left, bottom-right, ...) (default: bottom)
  *   data-offset-x/y        - px gap from trigger (refracted to CSS vars)
  *   data-mode="persistent" - no light dismiss, must use data-close
  *   data-container         - portal container - scopes target lookup

@@ -11,43 +11,72 @@
  * Selectors are scoped to [data-target] so the wrapper's data-placement
  * config attribute does not trigger positioning CSS.
  *
- * CSS var contract:
+ * CSS vars:
  *   --shift-x / --shift-y  - collision shift (JS writes px, e.g. "12px")
  *   --offset-x / --offset-y - gap from trigger (refracted from data-offset-*)
+ *
+ * [data-placement] values:
+ *   top | bottom | left | right
+ *     - that side, centered on the trigger
+ *   top-left | top-right | bottom-left | bottom-right
+ *     - that side, edge-aligned to the trigger
+ *
+ * The side owns the primary axis (the gap from the trigger) and the corner
+ * suffix owns the cross axis, so each value matches one rule from each group.
  */
 
-[data-target][data-placement='top'] {
-	bottom: calc(100% + var(--offset-y, 0px));
-	left: 50%;
-	transform: translate(
-		calc(-50% + var(--shift-x, 0px) + var(--offset-x, 0px)),
-		var(--shift-y, 0px)
-	);
-}
+@layer components {
+	/* Primary axis: ^= is "starts with", so top catches top-left and top-right */
+	[data-target][data-placement^='top'] {
+		bottom: calc(100% + var(--offset-y, 0px));
+	}
 
-[data-target][data-placement='bottom'] {
-	top: calc(100% + var(--offset-y, 0px));
-	left: 50%;
-	transform: translate(
-		calc(-50% + var(--shift-x, 0px) + var(--offset-x, 0px)),
-		var(--shift-y, 0px)
-	);
-}
+	[data-target][data-placement^='bottom'] {
+		top: calc(100% + var(--offset-y, 0px));
+	}
 
-[data-target][data-placement='left'] {
-	right: calc(100% + var(--offset-x, 0px));
-	top: 50%;
-	transform: translate(
-		var(--shift-x, 0px),
-		calc(-50% + var(--shift-y, 0px) + var(--offset-y, 0px))
-	);
-}
+	[data-target][data-placement^='left'] {
+		right: calc(100% + var(--offset-x, 0px));
+	}
 
-[data-target][data-placement='right'] {
-	left: calc(100% + var(--offset-x, 0px));
-	top: 50%;
-	transform: translate(
-		var(--shift-x, 0px),
-		calc(-50% + var(--shift-y, 0px) + var(--offset-y, 0px))
-	);
-}
+	[data-target][data-placement^='right'] {
+		left: calc(100% + var(--offset-x, 0px));
+	}
+
+	/* Cross axis: centered on the wrapper, undone by the -50% */
+	[data-target][data-placement='top'],
+	[data-target][data-placement='bottom'] {
+		left: 50%;
+		transform: translate(
+			calc(-50% + var(--shift-x, 0px) + var(--offset-x, 0px)),
+			var(--shift-y, 0px)
+		);
+	}
+
+	[data-target][data-placement='left'],
+	[data-target][data-placement='right'] {
+		top: 50%;
+		transform: translate(
+			var(--shift-x, 0px),
+			calc(-50% + var(--shift-y, 0px) + var(--offset-y, 0px))
+		);
+	}
+
+	/* Cross axis: $= is "ends with", so -left catches top-left and bottom-left
+	   (the edges align, so no centering and no -50% here) */
+	[data-target][data-placement$='-left'] {
+		left: 0;
+		transform: translate(
+			calc(var(--shift-x, 0px) + var(--offset-x, 0px)),
+			var(--shift-y, 0px)
+		);
+	}
+
+	[data-target][data-placement$='-right'] {
+		right: 0;
+		transform: translate(
+			calc(var(--shift-x, 0px) + var(--offset-x, 0px)),
+			var(--shift-y, 0px)
+		);
+	}
+} /* @layer components */

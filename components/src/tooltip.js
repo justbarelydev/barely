@@ -21,7 +21,8 @@
  * Show/hide delays use CSS transition-delay which means no JS timers
  *
  * Config attrs:
- *   data-placement     - top | right | bottom | left (default: top)
+ *   data-placement     - top | right | bottom | left, or a corner
+ *                        (top-left, bottom-right, ...) (default: top)
  *   data-offset-x/y    - px gap from trigger
  *   data-show-delay    - ms before showing
  *   data-hide-delay    - ms before hiding
@@ -98,7 +99,7 @@ Tooltip.onMount((root) => {
 
 		// fitToViewport shifts are trigger-relative. CSS left:50% centers on
 		// the wrapper - adjust when trigger ≠ root (wrapper + trigger sibling pattern).
-		const { adjustX, adjustY } = adjustForWrapper(root, trigger);
+		const { adjustX, adjustY } = adjustForWrapper(root, trigger, placement);
 
 		setAttrs(tooltip, {
 			'data-placement': placement,

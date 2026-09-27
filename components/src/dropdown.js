@@ -17,7 +17,8 @@
  *   </div>
  *
  * Config attrs (on root wrapper):
- *   data-placement   - top | right | bottom | left (default: bottom)
+ *   data-placement   - top | right | bottom | left, or a corner
+ *                      (top-left, bottom-right, ...) (default: bottom)
  *   data-offset-x/y  - px gap from trigger (refracted to CSS vars)
  *   data-focus       - item to focus on open: "last", a data-value, or first
  *
@@ -191,7 +192,7 @@ Dropdown.onMount((root) => {
 			menu,
 			preferred,
 		);
-		const { adjustX, adjustY } = adjustForWrapper(root, trigger);
+		const { adjustX, adjustY } = adjustForWrapper(root, trigger, placement);
 		setAttrs(menu, { 'data-placement': placement });
 		setCssVar(menu, 'shift-x', shiftX + adjustX, 'px');
 		setCssVar(menu, 'shift-y', shiftY + adjustY, 'px');
