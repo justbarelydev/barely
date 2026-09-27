@@ -66,14 +66,55 @@ export const observe = (el, fn, opts = {}) => {
 };
 
 /**
+ * A callback that resizes the element it's watching never stops. It fires again
+ * the next frame, forever. Deferring with rAF stops the browser from
+ * complaining about it, so we warn.
+ *
+ * One warning per element, and only after a long run of deliveries with no gap.
+ */
+const RO_LOOP_FRAMES = 600; // consecutive deliveries, ~10s at 60fps
+const ROStreak = new WeakMap(); // el -> { streak, at, warned }
+
+const checkLoop = (el) => {
+	if (ROStreak.get(el)?.warned) return;
+
+	const now = performance.now();
+	const prev = ROStreak.get(el);
+	const streak = prev && now - prev.at < 100 ? prev.streak + 1 : 1;
+
+	if (streak < RO_LOOP_FRAMES) {
+		ROStreak.set(el, { streak, at: now });
+		return;
+	}
+
+	console.warn(
+		'[barely] resize(): this callback has run on every frame for ~10s without settling. If it changes the size of the element it watches, that is a loop nothing can break.',
+		el,
+	);
+	ROStreak.set(el, { streak, at: now, warned: true });
+};
+
+/**
  * Pooled ResizeObserver with auto-cleanup.
  *
- * RO doesn't NEED pooling, but it doesn't hurt! Like everywhere else, cleanup is
- * auto-registered so you don't need to worry about it.
+ * RO doesn't NEED pooling, but it doesn't hurt! Like everywhere else, cleanup
+ * is auto-registered so you don't have to worry about it.
  *
- * The callback receives a single ResizeObserverEntry for the element you're
- * watching. This is a slight deviation from native, but it's consistent with
- * observe() and avoids having to dig through arrays.
+ * The callback gets one ResizeObserverEntry for the element you're watching,
+ * not an array. Slightly different from native, same shape as observe().
+ *
+ * Callbacks always run on the next frame, never while the browser is handing
+ * out sizes. That's not decoration: a callback that writes to the DOM mid-loop
+ * makes the browser redraw while it's still working, and it says so
+ * ("ResizeObserver loop completed with undelivered notifications"). One frame
+ * is the soonest a callback can run without that, so there is no switch to opt
+ * out. Need same-frame timing? Own a ResizeObserver.
+ *
+ * What it can't fix: a callback that resizes the element it's watching. That
+ * loops once per frame forever, and gets one console warning (see checkLoop).
+ *
+ * One callback per element - calling this twice for the same element swaps the
+ * callback instead of adding a second observer.
  *
  * If no element is given, observes the root itself - resize(root, fn).
  */
@@ -101,10 +142,17 @@ export const resize = (root, el, fn) => {
 		ROPool.set(
 			key,
 			new ResizeObserver((entries) => {
-				for (const entry of entries) {
-					const cb = ROCallbacks.get(entry.target);
-					if (cb) cb(entry);
-				}
+				// One frame later the delivery is over, so writes are safe.
+				// Writing mid-delivery is what triggers "ResizeObserver loop
+				// completed with undelivered notifications" - see resize().
+				requestAnimationFrame(() => {
+					for (const entry of entries) {
+						const cb = ROCallbacks.get(entry.target);
+						if (!cb) continue;
+						checkLoop(entry.target);
+						cb(entry);
+					}
+				});
 			}),
 		);
 	}
