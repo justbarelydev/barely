@@ -45,6 +45,39 @@ export const ensureAttr = (el, name, value) => {
 	if (!el.hasAttribute(name)) el.setAttribute(name, value);
 };
 
+const counters = new Map();
+
+/**
+ * Fresh id string: uid('tabs') -> 'tabs-1', then 'tabs-2'. One counter per
+ * prefix, so each component gets its own sequence.
+ *
+ * @param {string} [prefix='barely']
+ * @returns {string}
+ */
+export const uid = (prefix = 'barely') => {
+	const n = (counters.get(prefix) || 0) + 1;
+	counters.set(prefix, n);
+	return `${prefix}-${n}`;
+};
+
+/**
+ * Give an element an id once, and keep one that is already there.
+ *
+ * `make` is a string or a function, so a counter only burns when an id is
+ * actually needed. Hang derived ids off the instance's base id:
+ *
+ *   const base = ensureId(root, () => uid('tabs'))
+ *   ensureId(panel, `${base}-panel-desc`)
+ *
+ * @param {Element} el
+ * @param {string | (() => string)} make
+ * @returns {string} the element's id
+ */
+export const ensureId = (el, make) => {
+	if (!el.id) el.id = typeof make === 'function' ? make() : make;
+	return el.id;
+};
+
 /**
  * Write an inline CSS custom property. Numbers are unitless by default
  * (normalized 0-1 values like progress), pass a unit for dimensions.
