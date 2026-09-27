@@ -15,7 +15,8 @@
  *
  * Config attrs:
  *   data-items-to-show   - items visible at once (default: 1)
- *   data-items-to-scroll - items to advance per arrow click (default: 1)
+ *   data-items-to-scroll - items to advance per arrow click (falls back to
+ *                          items-to-show, then 1)
  *   data-mode="center"   - active item centered in the carousel
  *
  * State attrs (on root):
@@ -64,13 +65,13 @@ const cacheOffsets = (root, track) => {
 };
 
 // Get which visible child is currently first or centered (from cached offsets)
-// Used by go() so it advances from actual scroll position, not from
-// [data-index] (which avoids the bidirectional feedback loop).
+// go() falls back to it when no target is pending
+// syncState() reads it to write [data-index]
 const getCurrentIndex = (root, track, centerMode) => {
 	const offsets = root._barelyOffsets;
 	const { scrollLeft, clientWidth } = track;
 	// 1px tolerance to avoid sub-pixel rounding errors on high-DPI displays
-	// (because getBoundingClientRect() returns floats but offsetLeft is an int)
+	// (because getBoundingClientRect() returns floats but offsetLeft returns int)
 	const SUB_PIXEL_TOLERANCE = 1;
 
 	if (centerMode) {
@@ -102,28 +103,38 @@ const scrollTarget = (root, track, idx) => {
 	return Math.min(Math.max(0, target), maxScroll);
 };
 
-// Navigate by advancing items-to-scroll items from the current scroll position
-// Sets _barelySkip so onEffect doesn't double-scroll, then calls scrollTo directly
-// Never reads [data-index] to avoid feedback loops
+// Arrow keys -> direction.
+// Vertical carousels add ArrowUp/ArrowDown here.
+const ARROWS = { ArrowLeft: -1, ArrowRight: 1 };
+
+// Advance by items-to-scroll, stepping from the last target we asked for, not the
+// scroll position. No [data-index] write here, that's owned by syncState().
 const go = (root, dir) => {
 	const track = root._barelyTrack;
 	if (!track) return;
 
 	const itemsToScroll = root.getAttribute('data-items-to-scroll');
 	const itemsToShow = root.getAttribute('data-items-to-show');
-	const count = toInt(itemsToScroll, toInt(itemsToShow, 1));
+	// 0 is a no-op and a negative walks backwards
+	const step = Math.max(1, toInt(itemsToScroll, toInt(itemsToShow, 1)));
 	const centerMode = hasMode(root, 'center');
-	const index = getCurrentIndex(root, track, centerMode);
-	const next = clamp(index + dir * count, 0, track.children.length - 1);
+	const from =
+		root._barelyNavTarget ?? getCurrentIndex(root, track, centerMode);
+	const next = clamp(from + dir * step, 0, track.children.length - 1);
 
-	emit(root, 'barely:beforechange', {
-		index: next,
-		child: track.children[next],
-		track,
-	});
+	// Already at the first or last item, nowhere to go
+	if (next === from) return;
 
-	root._barelySkip = true;
-	root.setAttribute('data-index', next);
+	// One beforechange per gesture
+	if (!root._barelyNavTarget) {
+		emit(root, 'barely:beforechange', {
+			index: next,
+			child: track.children[next],
+			track,
+		});
+	}
+
+	root._barelyNavTarget = next;
 	track.scrollTo({
 		left: scrollTarget(root, track, next),
 	});
@@ -193,6 +204,9 @@ Carousel.onMount((root) => {
 	})();
 
 	const emitPageChange = debounce(() => {
+		// Scroll has settled, so the next step re-bases on the real position
+		root._barelyNavTarget = undefined;
+
 		// If _barelyStamp has changed since the debounce started, an external
 		// [data-index] set happened while we were waiting. Skip overwrite.
 		const stamp = root._barelyStamp;
@@ -237,6 +251,23 @@ Carousel.onMount((root) => {
 		},
 		'[data-nav]',
 	);
+
+	// Keys trigger same go() like buttons, not native key scroll
+	// (the browser's ~40px step lands between snap points and gets dragged back)
+	listen(root, 'keydown', (e) => {
+		const dir = ARROWS[e.key];
+		if (!dir) return;
+
+		// Ensure modifier keys work as intended
+		if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+		// Ensure inputs and other editable elements keep their keys
+		if (e.target.closest('input, textarea, select, [contenteditable]'))
+			return;
+
+		e.preventDefault();
+		go(root, dir);
+	});
 
 	// Rebuild cache and sync when resizing
 	resize(root, track, () => {
