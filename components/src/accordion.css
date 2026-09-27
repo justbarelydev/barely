@@ -1,14 +1,20 @@
 /*
  * @justbarely/components - Accordion structural styles
+ *
+ * Two different implementations:
+ *   native (<details>/<summary>): The browser owns the toggle, and the [name]
+ *            attribute gives you exclusive.
+ *   custom ([data-trigger]/[data-target]): Barely owns the toggle, keyboard, ARIA.
  */
 
-[data-component='accordion'] {
-	& summary {
-		cursor: pointer;
-	}
+@layer components {
+	[data-component='accordion'] {
+		/* Native - <details> / <summary> */
+		& summary {
+			cursor: pointer;
+		}
 
-	/* Vertical (default) */
-	&:not([data-mode~='horizontal']) {
+		/* Custom - [data-trigger] / [data-target] */
 		& > [data-trigger] {
 			display: block;
 		}
@@ -23,60 +29,53 @@
 			height: var(--height, auto);
 			visibility: visible;
 		}
-	}
 
-	/* Horizontal */
-	&[data-mode~='horizontal'] {
-		display: flex;
-		align-items: stretch;
-
-		& > [data-trigger] {
-			flex-shrink: 0;
-		}
-
-		& > [data-target] > * {
-			width: var(--panel-width);
-		}
-
-		/*
-		 * Closed by default (no width/height and hidden for a11y).
-		 * display: block; keeps it in the flex flow, and height: auto; keeps the
-		 * triggers from collapsing when all panels are closed.
-		*/
-		& > [data-target] {
-			display: block;
-			max-width: 0;
-			height: auto;
-			overflow: hidden;
-			visibility: hidden;
-		}
-
-		/* Open to the refracted width var */
-		& > [data-target][data-open] {
-			flex: 0 0 var(--panel-width);
-			max-width: var(--panel-width);
-			overflow: hidden;
-			visibility: visible;
-		}
-
-		/* Native horizontal - details wrap summary + content */
-		& details {
+		/* Horizontal */
+		&[data-mode~='horizontal'] {
 			display: flex;
-			flex: 0 1 auto;
-		}
 
-		& details[open],
-		& > *:has(details[open]) {
-			flex: 1 1 0;
-			min-width: 0;
-		}
+			/*
+			 * Native <details> / <summary>
+			 * The accordion is flex, each <details> is a grid: summary is
+			 * max-content, content takes the rest
+			 */
+			& details {
+				display: grid;
+				grid-template-columns: max-content minmax(0, 1fr);
+			}
 
-		& summary {
-			flex-shrink: 0;
-		}
+			& details[open],
+			& > *:has(details[open]) {
+				flex: 1 1 0;
+				min-width: 0;
+			}
 
-		& details > :not(summary) {
-			flex: 1;
+			/*
+			 * Custom [data-trigger] / [data-target]
+			 *
+			 * --panel-width is written in JS: the container minus the trigger
+			 * strip, applied to every [data-target]
+			 */
+			& > [data-trigger] {
+				flex-shrink: 0;
+			}
+
+			& > [data-target] > * {
+				width: var(--panel-width);
+			}
+
+			/* Closed target */
+			& > [data-target] {
+				display: block;
+				max-width: 0;
+				height: auto;
+			}
+
+			/* Open target */
+			& > [data-target][data-open] {
+				flex: 0 0 var(--panel-width);
+				max-width: var(--panel-width);
+			}
 		}
 	}
-}
+} /* @layer components */

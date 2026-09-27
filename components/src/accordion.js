@@ -1,11 +1,8 @@
 /**
  * @justbarely/components - Accordion
  *
- * Two different implementations to choose from depending on your needs:
- *
- * Native - <details>/<summary>
- * The browser does everything for you here, Barely just emits an event.
- * Add the same [name] attr to every <details> element for exclusive.
+ * Native - <details>/<summary>. The browser owns the toggle; same [name] attr on
+ * every details for exclusive.
  *
  *	<div data-component="accordion">
  *		<details open>
@@ -14,13 +11,13 @@
  *		</details>
  *	</div>
  *
- * Animation note: There is no fully-supported way to animate details/summary.
- * If you want to animate the native accordion, you can use @starting-style +
- * ::details-content { transition: height 0.3s; transition-behavior: allow-discrete; }
- * which are both baseline newly available (not widely supported yet).
+ * Animating native details needs @starting-style + ::details-content with
+ * transition-behavior: allow-discrete. Both are newly baseline, not widely
+ * supported yet.
  *
- * Custom - [data-trigger]/[data-target]
- * Barely controls toggle, keyboard, and ARIA.
+ * ---
+ *
+ * Custom - [data-trigger]/[data-target]. Barely owns toggle, keyboard, ARIA.
  *
  *	<div data-component="accordion" data-mode="exclusive">
  *		<button data-trigger="a1" data-open>Section 1</button>
@@ -29,21 +26,17 @@
  *		<div data-target="a2">Content 2</div>
  *	</div>
  *
- * State (set automatically, CSS or WAAPI can hook into them):
- *   [data-open] - panel is open (set on trigger + panel)
+ * State: [data-open] on the trigger and the panel.
  *
- * CSS-driven animation: since we can't animate from display:none (yet), we use
- * height: 0 + overflow:hidden + visibility:hidden for closed panels and proper
- * a11y. On open the height is measured and added as a CSS var that you can use
- * to animate to.
- *
- * Horizontal mode uses flex layout and --panel-width (container - triggers) to
- * size the panels. It relies on height: auto and the panel width to ensure text
- * wrapping doesn't leak into the animation.
+ * Animation: closed panels stay rendered and clipped (height:0 vertically,
+ * max-width:0 horizontally), because display:none can't transition (yet).
+ * Opening measures the size and writes it as a CSS var to animate to. Horizontal
+ * measures --panel-width instead, and re-measures on resize.
  *
  * Config attrs:
  *   data-mode - "exclusive" (one open at a time) | "horizontal" (side-by-side)
- *     - note: data-mode=exclusive is only needed for the custom implementation,
+ *     - horizontal is always exclusive (the width math assumes one open panel)
+ *     - data-mode=exclusive is only needed for the custom implementation,
  *       native <details> handles it automatically with the [name] attr
  *
  * Events:
@@ -69,11 +62,27 @@ import {
 
 const Accordion = Barely.register('accordion');
 
-// Measure available width for horizontal - container minus triggers
+// Container width minus the triggers, padding and column gaps
 const measurePanelWidth = (root) => {
-	const triggers = children(root, '[data-trigger]');
-	const used = triggers.reduce((sum, t) => sum + t.offsetWidth, 0);
-	return root.clientWidth - used;
+	const cs = getComputedStyle(root);
+	const padding =
+		(parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+	const gap = parseFloat(cs.columnGap) || 0;
+	const gaps = gap * Math.max(0, root.children.length - 1);
+	const strip = children(root, '[data-trigger]').reduce(
+		(sum, t) => sum + t.offsetWidth,
+		0,
+	);
+	return root.clientWidth - padding - gaps - strip;
+};
+
+// Write the width on every panel, closed ones included: the pinned inner width
+// stops a 0-width panel wrapping and ballooning the container height.
+const setPanelWidth = (root) => {
+	const width = measurePanelWidth(root);
+	children(root, '[data-target]').forEach((panel) =>
+		setCssVar(panel, 'panel-width', width, 'px'),
+	);
 };
 
 // Inject ARIA attributes
@@ -96,11 +105,12 @@ const syncAria = (root) => {
 	);
 };
 
-// Set a panel open or closed and mirror data-open on the trigger. Opening
-// measures --height first (horizontal measure from the container).
+// Open/close a panel and mirror data-open on the trigger. Opening measures first
+// (--height vertical, --panel-width horizontal) so the transition starts fresh.
 const setPanelOpen = (root, panel, trigger, open) => {
 	if (open) {
-		if (!hasMode(root, 'horizontal')) setSize(panel);
+		if (hasMode(root, 'horizontal')) setPanelWidth(root);
+		else setSize(panel);
 		setAttrs(panel, { 'data-open': true });
 		if (trigger) setAttrs(trigger, { 'data-open': true });
 	} else {
@@ -109,7 +119,7 @@ const setPanelOpen = (root, panel, trigger, open) => {
 	}
 };
 
-// Build a map of `key: { panel, trigger }` for easy lookup with click/key handlers
+// Map of key -> { panel, trigger } for the handlers
 const panelMap = (root) => {
 	const triggers = children(root, '[data-trigger]');
 	const map = new Map();
@@ -134,7 +144,7 @@ const toggle = (root, key) => {
 
 	emit(root, 'barely:beforechange', { key, open, trigger, target: panel });
 
-	if (hasMode(root, 'exclusive') && open) {
+	if ((hasMode(root, 'exclusive') || hasMode(root, 'horizontal')) && open) {
 		panels.forEach((e) => {
 			if (e !== entry && e.panel.hasAttribute('data-open'))
 				setPanelOpen(root, e.panel, e.trigger, false);
@@ -165,10 +175,9 @@ const onTriggerKeydown = (e, trigger, root) => {
 // Custom: [data-trigger]/[data-target]
 const initCustom = (root) => {
 	if (hasMode(root, 'horizontal')) {
-		const setWidth = () =>
-			setCssVar(root, 'panel-width', measurePanelWidth(root), 'px');
-		setWidth();
-		resize(root, setWidth);
+		setPanelWidth(root);
+		// Re-measure on resize: the container width changes
+		resize(root, () => setPanelWidth(root));
 	} else {
 		// Set --height for any open panels so they can animate closed
 		children(root, '[data-target][data-open]').forEach((panel) =>
@@ -182,7 +191,7 @@ const initCustom = (root) => {
 	listen(root, 'keydown', onTriggerKeydown, '[data-trigger]');
 };
 
-// Native: <details>/<summary> - browser handles toggle, name attr for exclusive
+// Native: the browser handles the toggle, [name] for exclusive
 const initNative = (root) => {
 	root.addEventListener(
 		'toggle',
