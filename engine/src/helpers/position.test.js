@@ -42,6 +42,23 @@ describe('popupCoords', () => {
 		).toEqual({ top: 110, left: 280 });
 	});
 
+	it('aligns a corner to the trigger edge, not the center', () => {
+		expect(
+			popupCoords(trigger, popup, {
+				placement: 'bottom-left',
+				shiftX: 0,
+				shiftY: 0,
+			}),
+		).toEqual({ top: 140, left: 200 });
+		expect(
+			popupCoords(trigger, popup, {
+				placement: 'bottom-right',
+				shiftX: 0,
+				shiftY: 0,
+			}),
+		).toEqual({ top: 140, left: 220 });
+	});
+
 	it('applies offsets and overflow shifts', () => {
 		expect(
 			popupCoords(
