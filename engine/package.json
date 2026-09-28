@@ -1,6 +1,6 @@
 {
 	"name": "@justbarely/engine",
-	"version": "0.5.1",
+	"version": "0.6.0",
 	"description": "Component registry, MO, IO, cleanup, sync, events",
 	"license": "MIT",
 	"files": [
@@ -17,7 +17,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@justbarely/core": "^0.1.0"
+		"@justbarely/core": "^0.2.0"
 	},
 	"publishConfig": {
 		"access": "public"
