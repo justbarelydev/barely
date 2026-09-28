@@ -58,6 +58,8 @@ import {
 	setCssVar,
 	setSize,
 	resize,
+	ensureId,
+	uid,
 } from '@justbarely/engine';
 
 const Accordion = Barely.register('accordion');
@@ -85,24 +87,40 @@ const setPanelWidth = (root) => {
 	);
 };
 
-// Inject ARIA attributes
+// Inject ARIA attributes. Ids are scoped per instance, so two accordions using
+// the same keys don't duplicate ids or cross-wire aria-controls.
 const syncAria = (root) => {
-	children(root, '[data-trigger]').forEach((el) =>
+	const panels = children(root, '[data-target]');
+	const triggers = children(root, '[data-trigger]');
+	const base = ensureId(root, () => uid('accordion'));
+
+	// Ids first: the wiring below reads them back
+	panels.forEach((el) =>
 		setAttrs(el, {
-			'aria-expanded': el.hasAttribute('data-open'),
-			'aria-controls': `target-${el.dataset.trigger}`,
-			id: `trigger-${el.dataset.trigger}`,
+			role: 'region',
+			id: ensureId(el, () => `${base}-panel-${el.dataset.target}`),
+		}),
+	);
+	triggers.forEach((el) =>
+		setAttrs(el, {
+			id: ensureId(el, () => `${base}-trigger-${el.dataset.trigger}`),
 		}),
 	);
 
-	children(root, '[data-target]').forEach((el) =>
+	triggers.forEach((el) => {
+		const panel = panels.find(
+			(p) => p.dataset.target === el.dataset.trigger,
+		);
 		setAttrs(el, {
-			role: 'region',
-			'aria-labelledby': `trigger-${el.dataset.target}`,
-			id: `target-${el.dataset.target}`,
-			'aria-hidden': !el.hasAttribute('data-open'),
-		}),
-	);
+			'aria-expanded': el.hasAttribute('data-open'),
+			'aria-controls': panel ? panel.id : false,
+		});
+		if (panel)
+			setAttrs(panel, {
+				'aria-labelledby': el.id,
+				'aria-hidden': !panel.hasAttribute('data-open'),
+			});
+	});
 };
 
 // Open/close a panel and mirror data-open on the trigger. Opening measures first
