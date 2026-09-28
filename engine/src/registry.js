@@ -26,7 +26,8 @@ export const Registry = new Map();
  *
  * Hooks (returned):
  *   onMount(fn)         - runs on init, or first intersection if [data-lazy]
- *   onEffect(attr, fn)  - runs on watched attribute changes
+ *   onEffect(attr, fn)  - fn(el, value, previous); undefined on init, null if
+ *                         the attr didn't exist before the write
  *   onRefract(attr, fn) - transforms a value before it hits its CSS var
  *   onChildUpdate(fn)   - runs when watchChildren children change
  */
@@ -100,7 +101,8 @@ export const initElement = (el) => {
 		if (blueprint.refract?.includes(key))
 			refract(el, key, refractValue(blueprint, key, val));
 
-		if (blueprint.effects[key]) blueprint.effects[key](el, val, null);
+		// undefined = the init pass. null is reserved for "attr didn't exist".
+		if (blueprint.effects[key]) blueprint.effects[key](el, val, undefined);
 
 		forwardSync(el, key, val);
 	});

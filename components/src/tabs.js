@@ -109,9 +109,9 @@ const activate = (root, key) => {
 	setAttrs(root, { 'data-active': key });
 };
 
-// previous === null is the mount run, so there is nothing to announce
+// undefined previous is the init pass; null means the attr just appeared
 Tabs.onEffect('data-active', (root, key, previous) => {
-	if (previous === null) return;
+	if (previous === undefined) return;
 	const trigger = children(root, '[data-trigger]').find(
 		(el) => el.dataset.trigger === key,
 	);
@@ -181,8 +181,7 @@ Tabs.onMount((root) => {
 			root,
 		);
 
-	// A tablist always has a selection. Starting unselected swallows the first
-	// click.
+	// A tablist always has a selection, so never start empty.
 	const key =
 		root.dataset.active ||
 		children(root, '[data-trigger][data-active]')[0]?.dataset.trigger ||
@@ -190,7 +189,7 @@ Tabs.onMount((root) => {
 
 	if (key) {
 		setAttrs(root, { 'data-active': key });
-		sync(root, key); // onEffect skips null previous, so sync directly
+		sync(root, key); // onEffect skips the init pass, so sync directly
 	} else {
 		syncAria(root); // no triggers at all
 	}

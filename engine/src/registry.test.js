@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi } from 'vitest';
 import { Barely, listen, runCleanup } from '@justbarely/engine';
-import { initElement } from '../../engine/src/registry.js';
+import { Registry, initElement } from '../../engine/src/registry.js';
+import { attachAttrMO } from '../../engine/src/mutation.js';
 
 const makeEl = (name) => {
 	const el = document.createElement('div');
@@ -38,5 +39,35 @@ describe('initElement', () => {
 		initElement(el);
 		runCleanup(el);
 		expect(teardown).toHaveBeenCalledTimes(1);
+	});
+
+	it('passes undefined as previous on the init pass', () => {
+		const effect = vi.fn();
+		Barely.register('init-pass', { watch: ['data-open'] }).onEffect(
+			'data-open',
+			effect,
+		);
+		const el = makeEl('init-pass');
+		el.setAttribute('data-open', 'yes');
+		initElement(el);
+		expect(effect).toHaveBeenCalledTimes(1);
+		// toBe, not toBeUndefined: null must NOT pass here
+		expect(effect.mock.calls[0][2]).toBe(undefined);
+	});
+
+	it('passes null as previous when a watched attr appears after init', async () => {
+		const effect = vi.fn();
+		Barely.register('appears', { watch: ['data-open'] }).onEffect(
+			'data-open',
+			effect,
+		);
+		const el = makeEl('appears');
+		// init first, then watch - the order initIntersection now uses
+		initElement(el);
+		attachAttrMO(el, Registry.get('appears'));
+		el.setAttribute('data-open', 'yes');
+		await new Promise((r) => setTimeout(r, 0));
+		expect(effect).toHaveBeenCalledTimes(1);
+		expect(effect.mock.calls[0][2]).toBe(null);
 	});
 });
