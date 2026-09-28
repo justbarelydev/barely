@@ -2,14 +2,16 @@
  * @justbarely/components - Popover structural styles
  */
 
-[data-popover] {
-	position: absolute;
-	z-index: 100;
-	opacity: 0;
-	visibility: hidden;
-}
+@layer components {
+	[data-popover] {
+		position: absolute;
+		z-index: 100;
+		opacity: 0;
+		visibility: hidden;
+	}
 
-[data-popover][data-open] {
-	opacity: 1;
-	visibility: visible;
-}
+	[data-popover][data-open] {
+		opacity: 1;
+		visibility: visible;
+	}
+} /* @layer components */

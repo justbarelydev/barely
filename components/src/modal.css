@@ -9,10 +9,12 @@
  * baseline widely available.
  */
 
-[data-component='modal'] dialog[open] {
-	opacity: 0;
-}
+@layer components {
+	[data-component='modal'] dialog[open] {
+		opacity: 0;
+	}
 
-[data-component='modal'] dialog[data-open] {
-	opacity: 1;
-}
+	[data-component='modal'] dialog[data-open] {
+		opacity: 1;
+	}
+} /* @layer components */

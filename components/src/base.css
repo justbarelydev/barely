@@ -2,40 +2,40 @@
  * @justbarely/components - Base structural styles for all components
  */
 
+/* TODO: rename motion layer? i know we had theme, transitions(?), effects, etc */
 @layer components, base, theme, motion;
 
-/* Scoped to components - global reset is in the theme layer */
-[data-component],
-[data-component] * {
-	box-sizing: border-box;
-}
+@layer components {
+	/* Scoped to components - global reset is in the theme layer */
+	[data-component],
+	[data-component] * {
+		box-sizing: border-box;
+	}
 
-[hidden] {
-	display: none !important;
-}
-
-/*
- * Barely collapsible - a convenience style/hook.
- * Since we can't easily animate from `display: none` yet, we hide elements in a
- * way that keeps them measurable and animatable with full baseline browser support.
- *
- * [!] Hiding content this way only collapses the content box, so if you want
- * padding on a collapsed element, put it inside a wrapper element. 
- *
- * --height defaults to initial so nested collapsibles don't inherit a parent
- * element's measured height.
- *
- * Barely components intentionally skip using this so you don't have to add the
- * attribute to every component every time.
+	/*
+	* Barely collapsible - a convenience style/hook.
+	* Since we can't easily animate from `display: none` yet, we hide elements
+	* in a way that keeps them measurable and animatable with full baseline
+	* browser support.
+	*
+	* [!] Hiding content this way only collapses the content box, so if you want
+	* padding on a collapsed element, put it inside a wrapper element. 
+	*
+	* --height defaults to initial so nested collapsibles don't inherit a parent
+	* element's measured height.
+	*
+	* Barely components intentionally skip using this so you don't have to add
+	* the attribute to every component every time.
  */
-[data-collapsible] {
-	--height: initial;
-	height: 0;
-	overflow: hidden;
-	visibility: hidden;
-}
+	[data-collapsible] {
+		--height: initial;
+		height: 0;
+		overflow: hidden;
+		visibility: hidden;
+	}
 
-[data-collapsible][data-open] {
-	height: var(--height, auto);
-	visibility: visible;
-}
+	[data-collapsible][data-open] {
+		height: var(--height, auto);
+		visibility: visible;
+	}
+} /* @layer components */

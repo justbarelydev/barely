@@ -2,33 +2,35 @@
  * @justbarely/components - Tooltip structural styles
  */
 
-[data-component='tooltip'] {
-	--offset-x: 0px;
-	--offset-y: 0px;
-	--show-delay: 0ms;
-	--hide-delay: 0ms;
+@layer components {
+	[data-component='tooltip'] {
+		--offset-x: 0px;
+		--offset-y: 0px;
+		--show-delay: 0ms;
+		--hide-delay: 0ms;
 
-	position: relative;
-}
+		position: relative;
+	}
 
-[data-component='tooltip'] [data-target] {
-	position: absolute;
-	visibility: hidden;
-	opacity: 0;
-	pointer-events: none;
-	z-index: 1;
-	/* 0ms default so the delay vars work if the theme sets them */
-	transition:
-		opacity 0ms,
-		visibility 0ms;
-	transition-delay: var(--hide-delay);
-}
+	[data-component='tooltip'] [data-target] {
+		position: absolute;
+		visibility: hidden;
+		opacity: 0;
+		pointer-events: none;
+		z-index: 1;
+		/* 0ms default so the delay vars work if the theme sets them */
+		transition:
+			opacity 0ms,
+			visibility 0ms;
+		transition-delay: var(--hide-delay);
+	}
 
-[data-component='tooltip'] [data-target][data-open] {
-	visibility: visible;
-	opacity: 1;
-	transition:
-		opacity 0ms,
-		visibility 0ms;
-	transition-delay: var(--show-delay);
-}
+	[data-component='tooltip'] [data-target][data-open] {
+		visibility: visible;
+		opacity: 1;
+		transition:
+			opacity 0ms,
+			visibility 0ms;
+		transition-delay: var(--show-delay);
+	}
+} /* @layer components */
