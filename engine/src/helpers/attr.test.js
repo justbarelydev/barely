@@ -46,13 +46,39 @@ describe('unitize', () => {
 });
 
 describe('setAttrs', () => {
-	it('sets strings and toggles booleans', () => {
+	it('sets strings as literals', () => {
 		const el = makeEl();
-		setAttrs(el, { id: 'x', 'aria-hidden': true });
+		setAttrs(el, { id: 'x' });
 		expect(el.attrs.id).toBe('x');
-		expect(el.attrs['aria-hidden']).toBe('');
-		setAttrs(el, { 'aria-hidden': false });
-		expect(el.attrs['aria-hidden']).toBeUndefined();
+	});
+
+	it('null removes', () => {
+		const el = makeEl({ id: 'x' });
+		setAttrs(el, { id: null });
+		expect(el.attrs.id).toBeUndefined();
+	});
+
+	it('booleans are presence on normal attributes', () => {
+		const el = makeEl();
+		setAttrs(el, { hidden: true, 'data-open': true });
+		expect(el.attrs.hidden).toBe('');
+		expect(el.attrs['data-open']).toBe('');
+		setAttrs(el, { hidden: false, 'data-open': false });
+		expect(el.attrs.hidden).toBeUndefined();
+		expect(el.attrs['data-open']).toBeUndefined();
+	});
+
+	it('booleans are words on ARIA', () => {
+		const el = makeEl();
+		setAttrs(el, { 'aria-expanded': true, 'aria-selected': false });
+		expect(el.attrs['aria-expanded']).toBe('true');
+		expect(el.attrs['aria-selected']).toBe('false');
+	});
+
+	it('null removes ARIA attrs too', () => {
+		const el = makeEl({ 'aria-controls': 'panel-1' });
+		setAttrs(el, { 'aria-controls': null });
+		expect(el.attrs['aria-controls']).toBeUndefined();
 	});
 });
 

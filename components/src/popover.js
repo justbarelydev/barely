@@ -226,7 +226,7 @@ const show = (root) => {
 			'data-open': true,
 			'aria-hidden': false,
 		});
-		setAttrs(root, { 'aria-expanded': 'true' });
+		setAttrs(root, { 'aria-expanded': true });
 
 		const el = target.querySelector('[data-focus]') || target;
 		if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
@@ -243,7 +243,7 @@ const hide = (root, returnFocus = true) => {
 
 	emit(root, 'barely:beforechange', { open: false, target });
 	setAttrs(target, { 'data-open': false, 'aria-hidden': true });
-	setAttrs(root, { 'aria-expanded': 'false' });
+	setAttrs(root, { 'aria-expanded': false });
 	emit(root, 'barely:afterchange', { open: false, target });
 
 	if (returnFocus) root.focus();
@@ -276,7 +276,7 @@ Popover.onMount((root) => {
 	// ARIA: popover content id
 	const triggerId =
 		root.getAttribute('id') || `popover-trigger-${popoverId++}`;
-	setAttrs(root, { id: triggerId, 'aria-expanded': 'false' });
+	setAttrs(root, { id: triggerId, 'aria-expanded': false });
 	ensureAttr(root, 'aria-haspopup', 'dialog');
 	root._barelyContentId = `${triggerId}-content`;
 

@@ -6,19 +6,26 @@ import { hasToken } from '@justbarely/core';
 
 /**
  * Update one or more attributes on an element
- * Booleans add/remove attributes without values
- * All other values are set as string literals
+ *
+ *   null / undefined   remove the attribute
+ *   string / number    set it as a literal
+ *   boolean            presence: true adds it empty, false removes it
+ *   boolean on aria-*  "true" / "false"
+ *
+ * ARIA is string-valued, so a boolean there would otherwise write "" - which
+ * reads as false to a screen reader. Presence-based HTML (hidden, open) keeps
+ * the empty form, because that is native.
  *
  * @param {Element} el
- * @param {Record<string, string|boolean|number>} attrs
+ * @param {Record<string, string|boolean|number|null|undefined>} attrs
  */
 export const setAttrs = (el, attrs) => {
 	for (const [key, val] of Object.entries(attrs)) {
-		if (typeof val === 'boolean') {
-			val ? el.setAttribute(key, '') : el.removeAttribute(key);
-		} else {
-			el.setAttribute(key, val);
-		}
+		if (val == null) el.removeAttribute(key);
+		else if (typeof val !== 'boolean') el.setAttribute(key, val);
+		else if (key.startsWith('aria-')) el.setAttribute(key, String(val));
+		else if (val) el.setAttribute(key, '');
+		else el.removeAttribute(key);
 	}
 };
 

@@ -156,7 +156,7 @@ Dropdown.onMount((root) => {
 	const triggerId =
 		root.getAttribute('id') || `dropdown-trigger-${dropdownId++}`;
 	setAttrs(root, { id: triggerId });
-	setAttrs(trigger, { 'aria-expanded': 'false' });
+	setAttrs(trigger, { 'aria-expanded': false });
 	ensureAttr(trigger, 'aria-haspopup', 'menu');
 	root._barelyMenuId = `${triggerId}-menu`;
 
@@ -180,7 +180,7 @@ Dropdown.onMount((root) => {
 		const menuId = root._barelyMenuId;
 		ensureAttr(menu, 'id', menuId);
 		setAttrs(trigger, {
-			'aria-expanded': 'true',
+			'aria-expanded': true,
 			'aria-controls': menuId,
 		});
 
@@ -218,7 +218,7 @@ Dropdown.onMount((root) => {
 			trigger,
 			target: menu,
 		});
-		setAttrs(trigger, { 'aria-expanded': 'false' });
+		setAttrs(trigger, { 'aria-expanded': false });
 		setAttrs(menu, { 'data-open': false, 'aria-hidden': true });
 
 		const returnTo = menu._barelyReturnFocus;

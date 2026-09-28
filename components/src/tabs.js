@@ -58,7 +58,7 @@ const syncAria = (root) => {
 	if (hasMode(root, 'vertical')) listAttrs['aria-orientation'] = 'vertical';
 	setAttrs(strip ?? root, listAttrs);
 	// Drop it from the root if a strip appeared later
-	if (strip) setAttrs(root, { role: false, 'aria-orientation': false });
+	if (strip) setAttrs(root, { role: false, 'aria-orientation': null });
 
 	const panels = children(root, '[data-target]');
 	const triggers = children(root, '[data-trigger]');
@@ -86,7 +86,7 @@ const syncAria = (root) => {
 		);
 		setAttrs(el, {
 			'aria-selected': el.hasAttribute('data-active'),
-			'aria-controls': panel ? panel.id : false,
+			'aria-controls': panel ? panel.id : null,
 			tabindex: el.hasAttribute('data-active') ? '0' : '-1',
 		});
 		if (panel) setAttrs(panel, { 'aria-labelledby': el.id });
@@ -109,7 +109,7 @@ const activate = (root, key) => {
 	setAttrs(root, { 'data-active': key });
 };
 
-// undefined previous is the init pass; null means the attr just appeared
+// undefined previous is init; null means the attr just appeared
 Tabs.onEffect('data-active', (root, key, previous) => {
 	if (previous === undefined) return;
 	const trigger = children(root, '[data-trigger]').find(
@@ -189,7 +189,7 @@ Tabs.onMount((root) => {
 
 	if (key) {
 		setAttrs(root, { 'data-active': key });
-		sync(root, key); // onEffect skips the init pass, so sync directly
+		sync(root, key); // onEffect skips init, so sync directly
 	} else {
 		syncAria(root); // no triggers at all
 	}

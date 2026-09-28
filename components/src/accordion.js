@@ -113,7 +113,7 @@ const syncAria = (root) => {
 		);
 		setAttrs(el, {
 			'aria-expanded': el.hasAttribute('data-open'),
-			'aria-controls': panel ? panel.id : false,
+			'aria-controls': panel ? panel.id : null,
 		});
 		if (panel)
 			setAttrs(panel, {
