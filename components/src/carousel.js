@@ -289,8 +289,9 @@ Carousel.onMount((root) => {
 			0,
 			track.children.length - 1,
 		);
-		root._barelySkip = true;
+
 		root.setAttribute('data-index', presetIndex);
+
 		track.scrollTo({
 			left: scrollTarget(root, track, presetIndex),
 			behavior: 'instant',

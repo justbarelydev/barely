@@ -170,16 +170,18 @@ function initComponent(node, Registry) {
 			(entry) => {
 				if (!entry.isIntersecting) return;
 				const bp = Registry.get(getComponentName(entry.target));
-				if (bp) attachAttrMO(entry.target, bp);
+				if (!bp) return;
 				initElement(entry.target);
+				attachAttrMO(entry.target, bp);
 			},
 			{ once: true },
 		);
 		return;
 	}
 
-	attachAttrMO(node, blueprint);
+	// Init, then watch - same order as intersection.js
 	initElement(node);
+	attachAttrMO(node, blueprint);
 }
 
 // Init and slap MO on dynamically added components' children
