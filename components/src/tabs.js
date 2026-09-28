@@ -2,19 +2,26 @@
  * @justbarely/components - Tabs
  *
  *   <div data-component="tabs" data-active="tab1">
- *     <button data-trigger="tab1" data-active>Tab 1</button>
- *     <button data-trigger="tab2">Tab 2</button>
- *     <div data-target="tab1" data-active>Content 1</div>
- *     <div data-target="tab2">Content 2</div>
+ *     <div data-triggers>
+ *       <button data-trigger="tab1" data-active>Tab 1</button>
+ *       <button data-trigger="tab2">Tab 2</button>
+ *     </div>
+ *     <!-- Panel wrapper element: recommended but not strictly required -->
+ *     <div>
+ *       <div data-target="tab1" data-active>Content 1</div>
+ *       <div data-target="tab2">Content 2</div>
+ *     </div>
  *   </div>
  *
- * [data-active] on root is the source of truth. Children sync from it, and you
- * can set [data-active] on root to switch tabs programmatically.
+ * Two containers. [data-triggers] (required) - it's the tablist and the strip.
+ * The panels go in a wrapper element: the wrapper is what keeps them one item
+ * in the root row, which vertical needs. Flat markup still works, but you'll
+ * get a warning in onMount (you can ignore it).
  *
- * [data-active] on individual triggers/targets is also supported for initial
- * state when no root attr is present.
+ * [data-active] on the root is the source of truth; set it to switch tabs.
+ * Marking an active child instead seeds the initial state before JS runs.
  *
- * Tab changes are paint-only. To animate container dimensions, listen for
+ * Tab changes are paint-only. To animate container size, listen for
  * barely:beforechange/afterchange and measure with setSize().
  *
  * Config attrs:
@@ -37,36 +44,56 @@ import {
 	children,
 	setAttrs,
 	hasMode,
+	ensureId,
+	uid,
 } from '@justbarely/engine';
 
 const Tabs = Barely.register('tabs', { watch: ['data-active'] });
 
 // Auto-inject a11y on mount/change
 const syncAria = (root) => {
-	const rootAttrs = { role: 'tablist' };
-	if (hasMode(root, 'vertical')) rootAttrs['aria-orientation'] = 'vertical';
-	setAttrs(root, rootAttrs);
+	// Missing strip: fall back to the root, and warn in onMount
+	const strip = children(root, '[data-triggers]')[0];
+	const listAttrs = { role: 'tablist' };
+	if (hasMode(root, 'vertical')) listAttrs['aria-orientation'] = 'vertical';
+	setAttrs(strip ?? root, listAttrs);
+	// Drop it from the root if a strip appeared later
+	if (strip) setAttrs(root, { role: false, 'aria-orientation': false });
 
-	children(root, '[data-trigger]').forEach((el) =>
-		setAttrs(el, {
-			role: 'tab',
-			'aria-selected': el.hasAttribute('data-active'),
-			'aria-controls': 'target-' + el.dataset.trigger,
-			id: 'trigger-' + el.dataset.trigger,
-			tabindex: el.hasAttribute('data-active') ? '0' : '-1',
-		}),
-	);
+	const panels = children(root, '[data-target]');
+	const triggers = children(root, '[data-trigger]');
 
-	children(root, '[data-target]').forEach((el) =>
+	// One id per instance
+	const base = ensureId(root, () => uid('tabs'));
+
+	// Ids first: the wiring below reads them back
+	panels.forEach((el) =>
 		setAttrs(el, {
 			role: 'tabpanel',
-			'aria-labelledby': 'trigger-' + el.dataset.target,
-			id: 'target-' + el.dataset.target,
+			id: ensureId(el, () => `${base}-panel-${el.dataset.target}`),
 		}),
 	);
+	triggers.forEach((el) =>
+		setAttrs(el, {
+			role: 'tab',
+			id: ensureId(el, () => `${base}-tab-${el.dataset.trigger}`),
+		}),
+	);
+
+	triggers.forEach((el) => {
+		const panel = panels.find(
+			(p) => p.dataset.target === el.dataset.trigger,
+		);
+		setAttrs(el, {
+			'aria-selected': el.hasAttribute('data-active'),
+			'aria-controls': panel ? panel.id : false,
+			tabindex: el.hasAttribute('data-active') ? '0' : '-1',
+		});
+		if (panel) setAttrs(panel, { 'aria-labelledby': el.id });
+	});
 };
 
-// Sync child [data-active] attrs and ARIA from root's [data-active] value.
+// Sync children and ARIA from the root value
 const sync = (root, key) => {
 	children(root, '[data-trigger]').forEach((el) =>
 		setAttrs(el, { 'data-active': el.dataset.trigger === key }),
@@ -77,12 +104,12 @@ const sync = (root, key) => {
 	syncAria(root);
 };
 
-// Set root attr, onEffect handles child sync/emit (MO fires before next paint).
+// Only the root attr - onEffect does the rest (the MO fires before paint)
 const activate = (root, key) => {
 	setAttrs(root, { 'data-active': key });
 };
 
-// Skip initial onEffect call with previous === null, emit before/after change
+// previous === null is the mount run, so there is nothing to announce
 Tabs.onEffect('data-active', (root, key, previous) => {
 	if (previous === null) return;
 	const trigger = children(root, '[data-trigger]').find(
@@ -106,11 +133,14 @@ Tabs.onEffect('data-active', (root, key, previous) => {
 	});
 });
 
-// a11y keyboard navigation - arrow keys, home/end, enter/space
+// Keyboard: arrows rove, Home/End jump, Enter/Space activate
 const onKeydown = (e, tab, root) => {
 	const tabs = children(root, '[data-trigger]');
 	const i = tabs.indexOf(tab);
 	if (i === -1) return;
+
+	// Chords belong to the browser and OS (Alt+Left is Back on Windows/Linux)
+	if (e.metaKey || e.ctrlKey || e.altKey) return;
 
 	const vertical = hasMode(root, 'vertical');
 	const nextKey = vertical ? 'ArrowDown' : 'ArrowRight';
@@ -145,10 +175,14 @@ const onKeydown = (e, tab, root) => {
 };
 
 Tabs.onMount((root) => {
-	// Set initial state. Root [data-active] takes precedence, then the first
-	// [data-active] child, then the first trigger. A tablist always has one
-	// selected tab - starting unselected would swallow the first click, because
-	// onEffect skips changes where previous is null.
+	if (!children(root, '[data-triggers]').length)
+		console.warn(
+			'[barely] tabs: no [data-triggers] container. The panels end up inside the tablist; wrap the triggers.',
+			root,
+		);
+
+	// A tablist always has a selection. Starting unselected swallows the first
+	// click.
 	const key =
 		root.dataset.active ||
 		children(root, '[data-trigger][data-active]')[0]?.dataset.trigger ||

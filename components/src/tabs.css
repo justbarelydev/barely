@@ -2,27 +2,35 @@
  * @justbarely/components - Tabs
  */
 
-[data-component='tabs'] [data-target] {
-	height: 0;
-	opacity: 0;
-	overflow: hidden;
-	visibility: hidden;
-}
-[data-component='tabs'] [data-target][data-active] {
-	height: auto;
-	opacity: 1;
-	visibility: visible;
-}
+@layer components {
+	[data-component='tabs'] [data-target] {
+		height: 0;
+		opacity: 0;
+		overflow: hidden;
+		visibility: hidden;
+	}
+	[data-component='tabs'] [data-target][data-active] {
+		height: auto;
+		opacity: 1;
+		visibility: visible;
+	}
 
-/* Buttons don't inherit the page font by default, set to inherit */
-[data-component='tabs'] [data-trigger] {
-	font: inherit;
-}
+	/* Buttons don't inherit the page font by default, set to inherit */
+	[data-component='tabs'] [data-trigger] {
+		font: inherit;
+	}
 
-/* Vertical: stack tabs on the left, panels on the right */
-[data-component='tabs'][data-mode~='vertical'] {
-	display: flex;
-}
-[data-component='tabs'][data-mode~='vertical'] [data-trigger] {
-	display: flex;
-}
+	/* The trigger container is the tab strip: a wrapping row of tabs. */
+	[data-component='tabs'] > [data-triggers] {
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+	/* Vertical: strip becomes a column, root becomes a row */
+	[data-component='tabs'][data-mode~='vertical'] {
+		display: flex;
+	}
+	[data-component='tabs'][data-mode~='vertical'] > [data-triggers] {
+		flex-direction: column;
+	}
+} /* @layer components */
