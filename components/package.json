@@ -1,6 +1,6 @@
 {
 	"name": "@justbarely/components",
-	"version": "0.4.1",
+	"version": "0.5.0",
 	"description": "Native-first UI interaction components for @justbarely",
 	"license": "MIT",
 	"files": [
@@ -17,8 +17,8 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@justbarely/core": "^0.1.2",
-		"@justbarely/engine": "^0.5.0"
+		"@justbarely/core": "^0.2.0",
+		"@justbarely/engine": "^0.6.0"
 	},
 	"publishConfig": {
 		"access": "public"
