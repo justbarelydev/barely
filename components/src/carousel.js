@@ -31,8 +31,7 @@
  *   barely:afterchange  -> { page, total, index, child, track }  (scroll settle)
  *   barely:pagechange   -> { page, total }
  *
- * Note: update the --gap CSS variable to match your track gap for accurate
- * pagination calculations.
+ * Note: --gap is the track's gap, read only by CSS (items-to-show width formula)
  */
 
 import './base.css';
@@ -58,9 +57,13 @@ export const Carousel = Barely.register('carousel', {
 // Called on mount, resize, items-to-show change, and childList mutations
 const cacheOffsets = (root, track) => {
 	const trackRect = track.getBoundingClientRect();
+	const { scrollLeft } = track;
 	root._barelyOffsets = [...track.children].map((el) => {
 		const rect = el.getBoundingClientRect();
-		return { left: rect.left - trackRect.left, width: rect.width };
+		return {
+			left: rect.left - trackRect.left + scrollLeft,
+			width: rect.width,
+		};
 	});
 };
 
@@ -69,20 +72,28 @@ const cacheOffsets = (root, track) => {
 // syncState() reads it to write [data-index]
 const getCurrentIndex = (root, track, centerMode) => {
 	const offsets = root._barelyOffsets;
+	if (!offsets || !offsets.length) return 0;
+
 	const { scrollLeft, clientWidth } = track;
 	// 1px tolerance to avoid sub-pixel rounding errors on high-DPI displays
 	// (because getBoundingClientRect() returns floats but offsetLeft returns int)
 	const SUB_PIXEL_TOLERANCE = 1;
 
 	if (centerMode) {
+		// Find nearest item center using cache offsets to prevent index jumping
+		// to 0 when hitting item gaps
 		const mid = scrollLeft + clientWidth / 2;
+		let closest = 0;
+		let minDiff = Infinity;
 		for (let i = 0; i < offsets.length; i++) {
-			if (
-				offsets[i].left - SUB_PIXEL_TOLERANCE <= mid &&
-				offsets[i].left + offsets[i].width + SUB_PIXEL_TOLERANCE >= mid
-			)
-				return i;
+			const itemMid = offsets[i].left + offsets[i].width / 2;
+			const diff = Math.abs(itemMid - mid);
+			if (diff < minDiff) {
+				minDiff = diff;
+				closest = i;
+			}
 		}
+		return closest;
 	} else {
 		for (let i = offsets.length - 1; i >= 0; i--) {
 			if (offsets[i].left - SUB_PIXEL_TOLERANCE <= scrollLeft + 5)
@@ -94,8 +105,11 @@ const getCurrentIndex = (root, track, centerMode) => {
 
 // Target scroll position for a child index, clamped to valid range.
 const scrollTarget = (root, track, idx) => {
-	const offsets = root._barelyOffsets;
-	const { left, width } = offsets[idx];
+	const offset = root._barelyOffsets?.[idx];
+	// If there is no offset fallback to scrollLeft
+	if (!offset) return track.scrollLeft;
+
+	const { left, width } = offset;
 	const target = hasMode(root, 'center')
 		? left - (track.clientWidth - width) / 2
 		: left;
