@@ -8,12 +8,19 @@
 
 import { forwardSync } from './helpers/sync';
 import { registerCleanup, setCleanupOwner } from './helpers/cleanup';
-import { getComponentName } from './helpers/elements';
+import { getComponentName, children } from './helpers/elements';
 import { setAttrVar } from './helpers/attr';
 import { emit } from './helpers/emit';
+import { initComponent } from './mutation';
 
 // Keeper of the keys for all components
 export const Registry = new Map();
+
+// True once Barely.init() has run, so register() can init pre-existing markup.
+let initialized = false;
+export const markInitialized = () => {
+	initialized = true;
+};
 
 /**
  * Register components to hook them into the engine and get those sweet
@@ -61,6 +68,18 @@ export function register(
 		onChildUpdate: [],
 	};
 	Registry.set(name, blueprint);
+
+	// If the engine is already running, the startup scan already passed by any
+	// existing markup for this name. Defer so hooks added synchronously after
+	// register() are in place, then init those elements.
+	if (initialized) {
+		Promise.resolve().then(() => {
+			children(document, `[data-component="${name}"]`).forEach((el) =>
+				initComponent(el, Registry),
+			);
+		});
+	}
+
 	return hooks(blueprint);
 }
 

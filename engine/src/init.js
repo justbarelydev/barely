@@ -5,7 +5,7 @@
  * components. Called once by Barely.init().
  */
 
-import { Registry } from './registry';
+import { Registry, markInitialized } from './registry';
 import { initMutation } from './mutation';
 import { initIntersection } from './intersection';
 
@@ -32,4 +32,5 @@ export function init() {
 	initialized = true;
 	initMutation(Registry);
 	initIntersection(Registry);
+	markInitialized();
 }
