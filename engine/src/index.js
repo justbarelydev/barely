@@ -28,3 +28,7 @@ export * from './helpers/observe';
 export * from './helpers/position';
 export * from './helpers/timing';
 export * from './helpers/measure';
+export * from './helpers/reflect';
+export { watch } from './helpers/watch';
+export { watchChild } from './helpers/watch-child';
+export { refract } from './helpers/refract';

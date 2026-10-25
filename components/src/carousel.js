@@ -318,14 +318,14 @@ Carousel.onMount((root) => {
 });
 
 // Rebuild cache when [data-items-to-show] changes
-Carousel.onEffect('data-items-to-show', (root) => {
+Carousel.onChange('data-items-to-show', (root) => {
 	const track = root._barelyTrack;
 	if (!track) return;
 	cacheOffsets(root, track);
 });
 
 // Handle [data-index] changes
-Carousel.onEffect('data-index', (root, value) => {
+Carousel.onChange('data-index', (root, value) => {
 	const track = root._barelyTrack;
 	if (!track) return;
 

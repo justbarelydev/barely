@@ -4,7 +4,7 @@ import {
 	unitize,
 	ensureAttr,
 	setCssVar,
-	refract,
+	setAttrVar,
 	hasMode,
 } from '@justbarely/engine';
 
@@ -108,10 +108,10 @@ describe('setCssVar', () => {
 	});
 });
 
-describe('refract', () => {
+describe('setAttrVar', () => {
 	it('strips the data- prefix onto the CSS var', () => {
 		const el = { style: makeStyle() };
-		refract(el, 'data-offset-x', '12');
+		setAttrVar(el, 'data-offset-x', '12');
 		expect(el.style.vars['--offset-x']).toBe('12');
 	});
 });

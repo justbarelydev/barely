@@ -13,17 +13,19 @@ import { COMPONENT, SYNC } from './constants';
 import { bindSyncElement, forwardSync } from './helpers/sync';
 import { getComponentName, children } from './helpers/elements';
 import { initElement, refractValue } from './registry';
-import { refract } from './helpers/attr';
+import { setAttrVar } from './helpers/attr';
 import { runCleanup } from './helpers/cleanup';
 import { emit } from './helpers/emit';
 import { observe } from './helpers/observe';
+import { watchCallbacks, watchAttrs } from './helpers/watch';
+import { refractTransform, refractAttrs } from './helpers/refract';
 
 // Per-element, per-attribute counter - catches runaway write loops
 const RUNAWAY_LIMIT = 25;
 const _counts = new WeakMap();
 
 /**
- * Catch infinite loops in onEffect - 25 writes to the same attr in one frame
+ * Catch infinite loops in onChange - 25 writes to the same attr in one frame
  * and we bail and log the culprit.
  */
 const isRunaway = (el, attr) => {
@@ -40,7 +42,7 @@ const isRunaway = (el, attr) => {
 	if (++entry.count === RUNAWAY_LIMIT) {
 		console.error(
 			`barely: runaway update on [${attr}] - stopping. ` +
-				`Check onEffect for infinite loops.`,
+				`Check onChange for infinite loops.`,
 			el,
 		);
 	}
@@ -76,7 +78,7 @@ function createAttrObserver(blueprint) {
 				blueprint.refract?.includes(attributeName) ||
 				target._barelyRefract?.includes(attributeName)
 			) {
-				refract(
+				setAttrVar(
 					target,
 					attributeName,
 					blueprint.refract?.includes(attributeName)
@@ -85,42 +87,49 @@ function createAttrObserver(blueprint) {
 				);
 			}
 
-			if (blueprint.effects[attributeName])
-				blueprint.effects[attributeName](target, newValue, oldValue);
-			forwardSync(target, attributeName, newValue);
+			// refract - mirrors registration refract but scoped
+			const transform = refractTransform(target, attributeName);
+			if (transform)
+				setAttrVar(target, attributeName, transform(newValue));
 
-			// Emit event for non-component data-watch attrs
-			if (target._barelyWatch?.includes(attributeName))
-				emit(target, 'barely:attrchange', {
-					name: attributeName,
-					value: newValue,
-					oldValue,
-				});
+			if (blueprint.changes[attributeName])
+				blueprint.changes[attributeName].forEach((fn) =>
+					fn(target, newValue, oldValue),
+				);
+			watchCallbacks(target, attributeName)?.forEach((fn) =>
+				fn(target, newValue, oldValue),
+			);
+			forwardSync(target, attributeName, newValue);
 		}
 	});
 }
 
 /**
  * Attach a per-component attribute MO that only watches what this blueprint
- * (or any data-watch / data-refract element) cares about.
+ * (or any data-refract element) cares about.
  *
  * @param {Element} el
  * @param {object} blueprint
  */
 export const attachAttrMO = (el, blueprint) => {
-	// Non-component watch/refract - space-separated literal attribute names
-	const instanceWatch = el.dataset.watch?.split(/\s+/) ?? [];
+	// Non-component data-refract - space-separated literal attribute names
 	const instanceRefract = el.dataset.refract?.split(/\s+/) ?? [];
 
 	// Store element refract so the MO callback can check it
 	if (instanceRefract.length) el._barelyRefract = instanceRefract;
-	// Store element watch so the MO callback can emit events
-	if (instanceWatch.length) el._barelyWatch = instanceWatch;
 
-	// Merge blueprint and element attrs for the MO filter
+	// Merge blueprint, instance, and imperative attrs for the MO filter
 	const allWatch = [
-		...new Set([...blueprint.watch, ...instanceWatch, ...instanceRefract]),
+		...new Set([
+			...blueprint.watch,
+			...instanceRefract,
+			...watchAttrs(el),
+			...refractAttrs(el),
+		]),
 	];
+
+	// Nothing to observe - skip the observer entirely
+	if (!allWatch.length) return;
 
 	const mo = createAttrObserver(blueprint);
 	mo.observe(el, {
@@ -155,15 +164,13 @@ function teardownTree(root) {
 }
 
 // Init and attach MO to dynamically added registered components
-function initComponent(node, Registry) {
+export function initComponent(node, Registry) {
 	const name = getComponentName(node);
 	if (!name || !Registry.has(name)) return;
 
 	const blueprint = Registry.get(name);
 
-	// data-lazy defers init until the element scrolls into view, just like the
-	// initial scan (intersection.js). This prevents an early init from eagerly
-	// mounting lazy components.
+	// defer init for data-lazy until the element scrolls into view
 	if (node.hasAttribute('data-lazy')) {
 		observe(
 			node,
@@ -205,7 +212,7 @@ const applyRefract = (el) => {
 	for (const attr of refractAttrs) {
 		const val = el.getAttribute(attr);
 		if (val != null) {
-			refract(el, attr, val);
+			setAttrVar(el, attr, val);
 			forwardSync(el, attr, val);
 		}
 	}
@@ -227,12 +234,12 @@ export const initMutation = (Registry) => {
 				initComponentChildren(node, Registry);
 				tryBindSync(node);
 				bindSyncChildren(node);
-				// Attach MO to ad-hoc data-watch/refract on non-components
+				// Attach MO to ad-hoc data-refract on non-components
 				if (
-					(node.dataset.watch || node.dataset.refract) &&
+					node.dataset.refract &&
 					!node.hasAttribute('data-component')
 				) {
-					attachAttrMO(node, { watch: [], refract: [], effects: {} });
+					attachAttrMO(node, { watch: [], refract: [], changes: {} });
 				}
 			});
 
@@ -251,22 +258,22 @@ export const initMutation = (Registry) => {
 	// MO only catches dynamically added elements - bind existing ones
 	children(document, SYNC).forEach((el) => bindSyncElement(el));
 
-	// Bind existing ad-hoc [data-watch] / [data-refract] on non-components
-	children(document, '[data-watch], [data-refract]').forEach((el) => {
+	// Bind existing ad-hoc [data-refract] on non-components
+	children(document, '[data-refract]').forEach((el) => {
 		if (!el.hasAttribute('data-component')) {
-			attachAttrMO(el, { watch: [], refract: [], effects: {} });
+			attachAttrMO(el, { watch: [], refract: [], changes: {} });
 			applyRefract(el);
 			el.setAttribute('data-ready', '');
 		}
 	});
 
-	// Catch dynamically added data-watch / data-refract / data-sync attrs
+	// Catch dynamically added data-refract / data-sync attrs
 	const attrMo = new MutationObserver((mutations) => {
 		for (const { target, attributeName } of mutations) {
 			if (attributeName === 'data-sync') {
 				bindSyncElement(target);
 			} else if (!target.hasAttribute('data-component')) {
-				attachAttrMO(target, { watch: [], refract: [], effects: {} });
+				attachAttrMO(target, { watch: [], refract: [], changes: {} });
 				applyRefract(target);
 				target.setAttribute('data-ready', '');
 			}
@@ -275,6 +282,6 @@ export const initMutation = (Registry) => {
 	attrMo.observe(document.body, {
 		attributes: true,
 		subtree: true,
-		attributeFilter: ['data-watch', 'data-refract', 'data-sync'],
+		attributeFilter: ['data-refract', 'data-sync'],
 	});
 };

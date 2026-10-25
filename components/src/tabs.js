@@ -104,13 +104,13 @@ const sync = (root, key) => {
 	syncAria(root);
 };
 
-// Only the root attr - onEffect does the rest (the MO fires before paint)
+// Only the root attr - onChange does the rest (the MO fires before paint)
 const activate = (root, key) => {
 	setAttrs(root, { 'data-active': key });
 };
 
 // undefined previous is init; null means the attr just appeared
-Tabs.onEffect('data-active', (root, key, previous) => {
+Tabs.onChange('data-active', (root, key, previous) => {
 	if (previous === undefined) return;
 	const trigger = children(root, '[data-trigger]').find(
 		(el) => el.dataset.trigger === key,
@@ -189,7 +189,7 @@ Tabs.onMount((root) => {
 
 	if (key) {
 		setAttrs(root, { 'data-active': key });
-		sync(root, key); // onEffect skips init, so sync directly
+		sync(root, key); // onChange skips init, so sync directly
 	} else {
 		syncAria(root); // no triggers at all
 	}

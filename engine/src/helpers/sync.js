@@ -2,8 +2,8 @@
  * @justbarely/engine - sync coordination
  *
  * This one's pretty pretty pretty cool. If you want a random element to mirror
- * the watched attrs and refracted CSS vars of a [data-component], [data-watch],
- * or [data-refract] element, just add `data-sync` to any element, with the
+ * the watched attrs and refracted CSS vars of a [data-component] or
+ * [data-refract] element, just add `data-sync` to any element, with the
  * target's CSS selector as the value.
  *
  * <span data-sync="#tabs"> will copy attrs and inline CSS vars to the span.

@@ -9,7 +9,7 @@
 import { forwardSync } from './helpers/sync';
 import { registerCleanup, setCleanupOwner } from './helpers/cleanup';
 import { getComponentName } from './helpers/elements';
-import { refract } from './helpers/attr';
+import { setAttrVar } from './helpers/attr';
 import { emit } from './helpers/emit';
 
 // Keeper of the keys for all components
@@ -26,7 +26,7 @@ export const Registry = new Map();
  *
  * Hooks (returned):
  *   onMount(fn)         - runs on init, or first intersection if [data-lazy]
- *   onEffect(attr, fn)  - fn(el, value, previous); undefined on init, null if
+ *   onChange(attr, fn)  - fn(el, value, previous); undefined on init, null if
  *                         the attr didn't exist before the write
  *   onRefract(attr, fn) - transforms a value before it hits its CSS var
  *   onChildUpdate(fn)   - runs when watchChildren children change
@@ -35,34 +35,50 @@ export function register(
 	name,
 	{ watch = [], refract = [], watchChildren = null } = {},
 ) {
+	// A re-register merges config into the existing blueprint instead of
+	// replacing it, so addons and separate modules can add behavior.
+	if (Registry.has(name)) {
+		const blueprint = Registry.get(name);
+		blueprint.watch = [
+			...new Set([...blueprint.watch, ...watch, ...refract]),
+		];
+		if (refract.length)
+			blueprint.refract = [
+				...new Set([...blueprint.refract, ...refract]),
+			];
+		if (watchChildren) blueprint.watchChildren = watchChildren;
+		return hooks(blueprint);
+	}
+
 	// Refracted attributes have to be watched, so merge them and dedupe
-	const allWatched = [...new Set([...watch, ...refract])];
 	const blueprint = {
-		watch: allWatched,
-		refract,
+		watch: [...new Set([...watch, ...refract])],
+		refract: [...refract],
 		refractMap: {},
 		watchChildren,
-		effects: {},
-		onMount: null,
-		onChildUpdate: null,
+		changes: {},
+		onMount: [],
+		onChildUpdate: [],
 	};
 	Registry.set(name, blueprint);
-
-	return {
-		onEffect: (attr, fn) => {
-			blueprint.effects[attr] = fn;
-		},
-		onRefract: (attr, fn) => {
-			blueprint.refractMap[attr] = fn;
-		},
-		onMount: (fn) => {
-			blueprint.onMount = fn;
-		},
-		onChildUpdate: (fn) => {
-			blueprint.onChildUpdate = fn;
-		},
-	};
+	return hooks(blueprint);
 }
+
+const hooks = (blueprint) => ({
+	onChange: (attr, fn) => {
+		if (!blueprint.changes[attr]) blueprint.changes[attr] = [];
+		blueprint.changes[attr].push(fn);
+	},
+	onRefract: (attr, fn) => {
+		blueprint.refractMap[attr] = fn;
+	},
+	onMount: (fn) => {
+		blueprint.onMount.push(fn);
+	},
+	onChildUpdate: (fn) => {
+		blueprint.onChildUpdate.push(fn);
+	},
+});
 
 /**
  * Apply onRefract transform for a given attribute, if one is registered
@@ -81,8 +97,8 @@ export const refractValue = (blueprint, key, val) => {
 
 /**
  * Initialize a component element when it first appears in the DOM.
- * 1. Reconcile watched attributes (refract, effects, data-sync)
- * 2. Set instance data-watch/data-refract vars
+ * 1. Resolve watched attributes (refract, changes, data-sync)
+ * 2. Set instance data-refract vars
  * 3. Run onMount
  * 4. Attach the watchChildren observer
  * 5. Mark [data-ready]
@@ -99,39 +115,64 @@ export const initElement = (el) => {
 		if (val === null) return;
 
 		if (blueprint.refract?.includes(key))
-			refract(el, key, refractValue(blueprint, key, val));
+			setAttrVar(el, key, refractValue(blueprint, key, val));
 
 		// undefined = the init pass. null is reserved for "attr didn't exist".
-		if (blueprint.effects[key]) blueprint.effects[key](el, val, undefined);
+		if (blueprint.changes[key])
+			blueprint.changes[key].forEach((fn) => fn(el, val, undefined));
 
 		forwardSync(el, key, val);
 	});
 
-	// Non-component watch/refract, set initial CSS vars, forward sync
-	const instanceWatch = el.dataset.watch?.split(/\s+/) ?? [];
+	// Non-component data-refract, set initial CSS vars, forward sync
 	const instanceRefract = el.dataset.refract?.split(/\s+/) ?? [];
-	const instanceAttrs = [...new Set([...instanceWatch, ...instanceRefract])];
-
-	instanceAttrs.forEach((key) => {
+	instanceRefract.forEach((key) => {
 		const val = el.getAttribute(key);
 		if (val === null) return;
-		if (instanceRefract.includes(key)) refract(el, key, val);
+		setAttrVar(el, key, val);
 		forwardSync(el, key, val);
 	});
 
-	if (blueprint.onMount) {
-		const teardown = setCleanupOwner(el, () => blueprint.onMount(el));
-		if (typeof teardown === 'function') registerCleanup(el, teardown);
+	const pending = [];
+	blueprint.onMount.forEach((mount) => {
+		const result = setCleanupOwner(el, () => mount(el));
+		if (typeof result === 'function') registerCleanup(el, result);
+		else if (result && typeof result.then === 'function')
+			pending.push(result);
+	});
+
+	// Async mounts: data-ready is immediate, data-status tracks the async state
+	// so skeletons can key off [data-status="loading"].
+	if (pending.length) {
+		el.setAttribute('data-status', 'loading');
+		Promise.allSettled(pending).then((results) => {
+			if (!el.isConnected) return;
+			el.setAttribute(
+				'data-status',
+				results.some((r) => r.status === 'rejected')
+					? 'error'
+					: 'success',
+			);
+			results.forEach((r) => {
+				if (r.status === 'fulfilled' && typeof r.value === 'function')
+					registerCleanup(el, r.value);
+				else if (r.status === 'rejected')
+					console.error('[barely] onMount rejected:', r.reason);
+			});
+		});
 	}
 
-	// Set up childList MO if the component has a watchChildren selector
-	if (blueprint.watchChildren && blueprint.onChildUpdate) {
+	// Set up childList MO if the component registered onChildUpdate. watchChildren
+	// names the target selector; absent or true means the root itself.
+	if (blueprint.onChildUpdate.length) {
 		const target =
-			blueprint.watchChildren === true
+			!blueprint.watchChildren || blueprint.watchChildren === true
 				? el
 				: el.querySelector(blueprint.watchChildren);
 		if (target) {
-			const mo = new MutationObserver(() => blueprint.onChildUpdate(el));
+			const mo = new MutationObserver(() =>
+				blueprint.onChildUpdate.forEach((fn) => fn(el)),
+			);
 			mo.observe(target, { childList: true });
 			registerCleanup(el, () => mo.disconnect());
 		}

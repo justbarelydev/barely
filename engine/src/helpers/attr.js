@@ -107,15 +107,14 @@ export const setCssVar = (el, name, value, unit = '') => {
 };
 
 /**
- * Convert a data-attribute to an inline CSS var. Uses setCssVar (unitless)
- * so refracted values stay exactly as authored - units come from onRefract
- * transforms (unitize).
+ * Write an attribute value to its CSS var. Uses setCssVar (unitless), so the
+ * value comes through exactly as authored (units come from the caller's transform).
  *
  * @param {Element} el
  * @param {string} name - data-attribute name (data-offset-x -> --offset-x)
  * @param {string} val
  */
-export const refract = (el, name, val) =>
+export const setAttrVar = (el, name, val) =>
 	setCssVar(el, name.replace(/^data-/, ''), val);
 
 /**

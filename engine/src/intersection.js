@@ -3,10 +3,8 @@
  */
 
 import { COMPONENT } from './constants';
-import { getComponentName, children } from './helpers/elements';
-import { initElement } from './registry';
-import { attachAttrMO } from './mutation';
-import { observe } from './helpers/observe';
+import { children } from './helpers/elements';
+import { initComponent } from './mutation';
 
 /**
  * Init every [data-component] immediately, unless [data-lazy] is present -
@@ -17,29 +15,5 @@ import { observe } from './helpers/observe';
  * @param {Map} Registry
  */
 export const initIntersection = (Registry) => {
-	children(document, COMPONENT).forEach((el) => {
-		const blueprint = Registry.get(getComponentName(el));
-		if (!blueprint) return;
-
-		// Not lazy - init, then start watching. Init must not see its own writes
-		// come back as changes.
-		if (!el.hasAttribute('data-lazy')) {
-			initElement(el);
-			attachAttrMO(el, blueprint);
-			return;
-		}
-
-		// Lazy - wait for first intersection and init once
-		observe(
-			el,
-			(entry) => {
-				if (!entry.isIntersecting) return;
-				const blueprint = Registry.get(getComponentName(entry.target));
-				if (!blueprint) return;
-				initElement(entry.target);
-				attachAttrMO(entry.target, blueprint);
-			},
-			{ once: true },
-		);
-	});
+	children(document, COMPONENT).forEach((el) => initComponent(el, Registry));
 };
