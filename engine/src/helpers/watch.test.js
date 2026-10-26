@@ -39,4 +39,18 @@ describe('watch', () => {
 		expect(a).toHaveBeenCalledTimes(1);
 		expect(b).toHaveBeenCalledTimes(1);
 	});
+
+	it('accepts an array of attrs', async () => {
+		const cb = vi.fn();
+		Barely.register('watch-array').onMount((root) => {
+			watch(root, ['data-a', 'data-b'], cb);
+		});
+		const el = makeEl('watch-array');
+		initElement(el);
+		attachAttrMO(el, Registry.get('watch-array'));
+		el.setAttribute('data-a', '1');
+		el.setAttribute('data-b', '2');
+		await new Promise((r) => setTimeout(r, 0));
+		expect(cb).toHaveBeenCalledTimes(2);
+	});
 });

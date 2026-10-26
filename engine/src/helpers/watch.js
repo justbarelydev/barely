@@ -2,9 +2,9 @@
  * @justbarely/engine - imperative attribute watching
  *
  * Declarative `watch: [...]` in register() covers the static case. `watch()`
- * adds a callback for an attribute from inside onMount (or any code that runs
- * before the observer attaches), so you can add attrs to watch at runtime.
- * Cleanup keyed on the element, like listen().
+ * adds a callback for an attribute (or an array of attributes) from inside
+ * onMount - or any code that runs before the observer attaches - so you can
+ * add attrs to watch at runtime. Cleanup keyed on the element, like listen().
  */
 
 import { registerCleanup, getCleanupOwner } from './cleanup';
@@ -13,17 +13,19 @@ import { registerCleanup, getCleanupOwner } from './cleanup';
 const Watches = new WeakMap();
 
 export const watch = (el, attr, cb) => {
-	let map = Watches.get(el);
-	if (!map) Watches.set(el, (map = new Map()));
+	for (const name of Array.isArray(attr) ? attr : [attr]) {
+		let map = Watches.get(el);
+		if (!map) Watches.set(el, (map = new Map()));
 
-	let set = map.get(attr);
-	if (!set) map.set(attr, (set = new Set()));
-	set.add(cb);
+		let set = map.get(name);
+		if (!set) map.set(name, (set = new Set()));
+		set.add(cb);
 
-	registerCleanup(getCleanupOwner() ?? el, () => {
-		set.delete(cb);
-		if (set.size === 0) map.delete(attr);
-	});
+		registerCleanup(getCleanupOwner() ?? el, () => {
+			set.delete(cb);
+			if (set.size === 0) map.delete(name);
+		});
+	}
 };
 
 // Internal accessors for the mutation observer (not part of the public API)

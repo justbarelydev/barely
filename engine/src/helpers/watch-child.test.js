@@ -50,4 +50,21 @@ describe('watchChild', () => {
 		await new Promise((r) => setTimeout(r, 0));
 		expect(cb).not.toHaveBeenCalled();
 	});
+
+	it('accepts an array of attrs', async () => {
+		const cb = vi.fn();
+		Barely.register('wc-array').onMount((root) => {
+			watchChild(root, ['data-a', 'data-b'], cb);
+		});
+		const el = makeEl('wc-array');
+		const child = document.createElement('button');
+		el.appendChild(child);
+		initElement(el);
+		child.setAttribute('data-a', '1');
+		child.setAttribute('data-b', '2');
+		await new Promise((r) => setTimeout(r, 0));
+		expect(cb).toHaveBeenCalledTimes(2);
+		expect(cb).toHaveBeenCalledWith(child, '1', null);
+		expect(cb).toHaveBeenCalledWith(child, '2', null);
+	});
 });

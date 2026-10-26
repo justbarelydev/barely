@@ -6,6 +6,7 @@
  */
 
 import { fitRect, parsePlacement } from '@justbarely/core';
+import { setAttrs, setCssVar } from './attr';
 
 /**
  * Calculate placement and overflow shift for a popup relative to its trigger.
@@ -124,4 +125,82 @@ export const adjustForWrapper = (root, trigger, placement = '') => {
 			(rootRect.left + rootRect.width / 2),
 		adjustY,
 	};
+};
+
+/**
+ * Position an in-tree target relative to its trigger and write the result to
+ * CSS (data-placement + --shift-x/--shift-y). One call does everything:
+ *
+ *   1. Apply the preferred placement tentatively, so the target measures at
+ *      its placed size (an un-placed target spans the full wrapper width,
+ *      which skews the shift).
+ *   2. Fit/flip against the viewport.
+ *   3. Correct for the wrapper-vs-trigger offset (adjustForWrapper).
+ *   4. Write the resolved placement and shift vars.
+ *
+ * Offsets are left to positioning.css (--offset-x/y); this helper never
+ * re-reads what CSS already has.
+ *
+ * @param {Element} root - the wrapper (positioned container)
+ * @param {Element} trigger - the invoking element (may be root itself)
+ * @param {Element} target - the popup to place
+ * @param {string} [preferred='top'] - preferred side or corner
+ * @param {Element} [viewport] - container to constrain to (defaults to window)
+ * @returns {string} resolved placement
+ */
+export const placeTarget = (
+	root,
+	trigger,
+	target,
+	preferred = 'top',
+	viewport,
+) => {
+	setAttrs(target, { 'data-placement': preferred });
+
+	const { placement, shiftX, shiftY } = fitToViewport(
+		trigger,
+		target,
+		preferred,
+		viewport,
+	);
+	const { adjustX, adjustY } = adjustForWrapper(root, trigger, placement);
+
+	setAttrs(target, { 'data-placement': placement });
+	setCssVar(target, 'shift-x', shiftX + adjustX, 'px');
+	setCssVar(target, 'shift-y', shiftY + adjustY, 'px');
+
+	return placement;
+};
+
+/**
+ * Compute viewport-relative { top, left } for a body-appended (portal) target.
+ * Reads refracted --offset-x/y off the trigger, so offsets resolve in one
+ * place instead of each caller parsing them by hand.
+ *
+ * @param {Element} trigger - the invoking element (also carries the refracted
+ *   --offset-x/y)
+ * @param {Element} target - the popup to place
+ * @param {string} [preferred='bottom'] - preferred side or corner
+ * @param {Element} [viewport] - container to constrain to (defaults to window)
+ * @returns {{ placement: string, top: number, left: number }}
+ */
+export const floatCoords = (
+	trigger,
+	target,
+	preferred = 'bottom',
+	viewport,
+) => {
+	const fit = fitToViewport(trigger, target, preferred, viewport);
+	const offsetX =
+		parseFloat(trigger.style.getPropertyValue('--offset-x')) || 0;
+	const offsetY =
+		parseFloat(trigger.style.getPropertyValue('--offset-y')) || 0;
+	const { top, left } = popupCoords(
+		trigger.getBoundingClientRect(),
+		target.getBoundingClientRect(),
+		fit,
+		offsetX,
+		offsetY,
+	);
+	return { placement: fit.placement, top, left };
 };
