@@ -45,7 +45,8 @@
 	}
 
 	[data-component='accordion'][data-mode~='horizontal'] details[open],
-	[data-component='accordion'][data-mode~='horizontal'] > *:has(details[open]) {
+	[data-component='accordion'][data-mode~='horizontal']
+		> *:has(details[open]) {
 		flex: 1 1 0;
 		min-width: 0;
 	}
@@ -72,7 +73,8 @@
 	}
 
 	/* Open target */
-	[data-component='accordion'][data-mode~='horizontal'] > [data-target][data-open] {
+	[data-component='accordion'][data-mode~='horizontal']
+		> [data-target][data-open] {
 		flex: 0 0 var(--panel-width);
 		max-width: var(--panel-width);
 	}
