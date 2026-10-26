@@ -14,7 +14,7 @@
  *     <div data-target><strong>Bold</strong> tooltip</div>
  *   </div>
  *
- * Positioning is CSS-driven: fitToViewport computes placement and shift,
+ * Positioning is CSS-driven: placeTarget computes placement and shift,
  * written to --shift-x/--shift-y CSS vars
  *
  * Offsets are refracted to --offset-x/y, applied in positioning.css
@@ -39,9 +39,7 @@ import {
 	setAttrs,
 	ensureAttr,
 	unitize,
-	fitToViewport,
-	adjustForWrapper,
-	setCssVar,
+	placeTarget,
 } from '@justbarely/engine';
 
 const Tooltip = Barely.register('tooltip', {
@@ -90,23 +88,8 @@ Tooltip.onMount((root) => {
 	ensureAttr(trigger, 'aria-describedby', id);
 
 	const show = () => {
-		const preferred = root.dataset.placement ?? 'top';
-		const { placement, shiftX, shiftY } = fitToViewport(
-			trigger,
-			tooltip,
-			preferred,
-		);
-
-		// fitToViewport shifts are trigger-relative. CSS left:50% centers on
-		// the wrapper - adjust when trigger ≠ root (wrapper + trigger sibling pattern).
-		const { adjustX, adjustY } = adjustForWrapper(root, trigger, placement);
-
-		setAttrs(tooltip, {
-			'data-placement': placement,
-			'data-open': true,
-		});
-		setCssVar(tooltip, 'shift-x', shiftX + adjustX, 'px');
-		setCssVar(tooltip, 'shift-y', shiftY + adjustY, 'px');
+		placeTarget(root, trigger, tooltip, root.dataset.placement ?? 'top');
+		setAttrs(tooltip, { 'data-open': true });
 	};
 
 	const hide = () => tooltip.removeAttribute('data-open');

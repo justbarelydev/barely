@@ -38,13 +38,11 @@ import {
 	child,
 	children,
 	ensureAttr,
-	fitToViewport,
-	adjustForWrapper,
+	placeTarget,
 	setAttrs,
 	listen,
 	emit,
 	unitize,
-	setCssVar,
 } from '@justbarely/engine';
 
 const Dropdown = Barely.register('dropdown', {
@@ -186,16 +184,7 @@ Dropdown.onMount((root) => {
 
 		// Position while closed - visibility:hidden keeps layout intact, so the
 		// menu is measurable without unhiding.
-		const preferred = root.dataset.placement ?? 'bottom';
-		const { placement, shiftX, shiftY } = fitToViewport(
-			trigger,
-			menu,
-			preferred,
-		);
-		const { adjustX, adjustY } = adjustForWrapper(root, trigger, placement);
-		setAttrs(menu, { 'data-placement': placement });
-		setCssVar(menu, 'shift-x', shiftX + adjustX, 'px');
-		setCssVar(menu, 'shift-y', shiftY + adjustY, 'px');
+		placeTarget(root, trigger, menu, root.dataset.placement ?? 'bottom');
 		menu._barelyReturnFocus = trigger; // focus target restored on close
 
 		emit(root, 'barely:beforechange', {

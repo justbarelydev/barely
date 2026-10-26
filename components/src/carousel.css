@@ -18,15 +18,15 @@
 		scroll-snap-type: x mandatory;
 		scrollbar-width: none;
 		-webkit-overflow-scrolling: touch;
+	}
 
-		&::-webkit-scrollbar {
-			display: none;
-		}
+	[data-component='carousel'] [data-track]::-webkit-scrollbar {
+		display: none;
+	}
 
-		& > * {
-			scroll-snap-align: start;
-			flex: 0 0 auto;
-		}
+	[data-component='carousel'] [data-track] > * {
+		scroll-snap-align: start;
+		flex: 0 0 auto;
 	}
 
 	/* Fixed-width items when items-to-show is set */
@@ -34,10 +34,10 @@
 		--gap-count: calc(var(--items-to-show, 1) - 1);
 		--gap-total: calc(var(--gap) * var(--gap-count));
 		--item-width: calc((100% - var(--gap-total)) / var(--items-to-show, 1));
+	}
 
-		& > * {
-			flex: 1 0 var(--item-width);
-		}
+	[data-component='carousel'][data-items-to-show] [data-track] > * {
+		flex: 1 0 var(--item-width);
 	}
 
 	/* Arrow visibility driven by data attributes - no JS needed after state is set */

@@ -50,9 +50,8 @@ import './popover.css';
 import {
 	Barely,
 	ensureAttr,
-	fitToViewport,
+	floatCoords,
 	hasMode,
-	popupCoords,
 	setAttrs,
 	listen,
 	emit,
@@ -190,16 +189,10 @@ const show = (root) => {
 		}
 	}
 
-	const preferred = root.dataset.placement ?? 'bottom';
-	const offsetX = parseFloat(root.style.getPropertyValue('--offset-x')) || 0;
-	const offsetY = parseFloat(root.style.getPropertyValue('--offset-y')) || 0;
-	const fit = fitToViewport(root, target, preferred);
-	const { top, left } = popupCoords(
-		root.getBoundingClientRect(),
-		target.getBoundingClientRect(),
-		fit,
-		offsetX,
-		offsetY,
+	const { placement, top, left } = floatCoords(
+		root,
+		target,
+		root.dataset.placement ?? 'bottom',
 	);
 
 	if (container && container !== document.body) {
@@ -222,7 +215,7 @@ const show = (root) => {
 	target.offsetHeight;
 	requestAnimationFrame(() => {
 		setAttrs(target, {
-			'data-placement': fit.placement,
+			'data-placement': placement,
 			'data-open': true,
 			'aria-hidden': false,
 		});
