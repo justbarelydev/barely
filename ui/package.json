@@ -1,6 +1,6 @@
 {
 	"name": "@justbarely/ui",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Everything in one - core, engine, data, and components",
 	"license": "MIT",
 	"type": "module",
@@ -29,9 +29,9 @@
 	},
 	"dependencies": {
 		"@justbarely/core": "^0.2.0",
-		"@justbarely/engine": "^0.7.0",
+		"@justbarely/engine": "^0.8.0",
 		"@justbarely/data": "^0.1.4",
-		"@justbarely/components": "^0.5.3"
+		"@justbarely/components": "^0.5.5"
 	},
 	"publishConfig": {
 		"access": "public"
