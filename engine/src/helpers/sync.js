@@ -12,8 +12,33 @@
  * that matches multiple elements, it only syncs with the first one it finds.
  */
 
+import { getComponentName } from './elements';
+import { Registry } from '../registry';
+import { refractAttrs } from './refract';
+import { watchAttrs } from './watch';
+
 // WeakMap so subscribers are garbage collected with their source element
 const Subscribers = new WeakMap();
+
+// The attrs a source can sync to subscribers: blueprint watch (refract attrs
+// are merged into watch at registration, so this covers both), data-refract on
+// the element, and imperative watch()/refract().
+const syncableAttrs = (el) => {
+	const attrs = new Set(Registry.get(getComponentName(el))?.watch ?? []);
+	(el.dataset.refract ?? '')
+		.split(/\s+/)
+		.filter(Boolean)
+		.forEach((a) => attrs.add(a));
+	refractAttrs(el).forEach((a) => attrs.add(a));
+	watchAttrs(el).forEach((a) => attrs.add(a));
+	return [...attrs];
+};
+
+// Copy one attr plus its CSS var to a subscriber
+const syncTo = (sub, key, value) => {
+	sub.setAttribute(key, value);
+	sub.style.setProperty(`--${key.replace(/^data-/, '')}`, value);
+};
 
 /**
  * Subscribe an element to mirror another element's watched attrs and CSS vars.
@@ -31,6 +56,12 @@ export const registerSync = (subscriber, sourceSelector) => {
 	const subs = Subscribers.get(source) || [];
 	subs.push(subscriber);
 	Subscribers.set(source, subs);
+
+	// Mirror the source's current values immediately, not just on change
+	for (const attr of syncableAttrs(source)) {
+		const val = source.getAttribute(attr);
+		if (val != null) syncTo(subscriber, attr, val);
+	}
 };
 
 /**
@@ -51,8 +82,5 @@ export const bindSyncElement = (el) => {
  * @param {string} value
  */
 export const forwardSync = (source, key, value) => {
-	Subscribers.get(source)?.forEach((sub) => {
-		sub.setAttribute(key, value);
-		sub.style.setProperty(`--${key.replace(/^data-/, '')}`, value);
-	});
+	Subscribers.get(source)?.forEach((sub) => syncTo(sub, key, value));
 };

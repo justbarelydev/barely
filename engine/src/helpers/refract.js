@@ -7,8 +7,9 @@
  */
 
 import { registerCleanup, getCleanupOwner } from './cleanup';
+import { setAttrVar } from './attr';
 
-// el -> Map(attr, transform fn) - auto GC'd with the element
+// el -> Map(attr -> fn) - auto GC'd with the element
 const Refracts = new WeakMap();
 
 export const refract = (el, attr, transform) => {
@@ -19,6 +20,10 @@ export const refract = (el, attr, transform) => {
 	map.set(attr, fn);
 
 	registerCleanup(getCleanupOwner() ?? el, () => map.delete(attr));
+
+	// Apply the current value immediately
+	const val = el.getAttribute(attr);
+	if (val != null) setAttrVar(el, attr, fn(val));
 };
 
 // Internal accessors for the mutation observer (not part of the public API)

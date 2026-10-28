@@ -234,12 +234,15 @@ export const initMutation = (Registry) => {
 				initComponentChildren(node, Registry);
 				tryBindSync(node);
 				bindSyncChildren(node);
-				// Attach MO to ad-hoc data-refract on non-components
+				// Attach MO to ad-hoc data-refract on non-components and apply
+				// the initial vars so they refract on mount, not just on change
 				if (
 					node.dataset.refract &&
 					!node.hasAttribute('data-component')
 				) {
 					attachAttrMO(node, { watch: [], refract: [], changes: {} });
+					applyRefract(node);
+					node.setAttribute('data-ready', '');
 				}
 			});
 

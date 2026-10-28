@@ -24,4 +24,13 @@ describe('bindSyncElement', () => {
 		forwardSync(src, 'data-x', '1');
 		expect(sub.getAttribute('data-x')).toBe('1');
 	});
+
+	it("copies the source's current values on bind", () => {
+		document.body.innerHTML =
+			'<div id="src" data-refract="data-x" data-x="1"></div><div data-sync="#src"></div>';
+		const sub = document.querySelector('[data-sync]');
+		bindSyncElement(sub);
+		expect(sub.getAttribute('data-x')).toBe('1');
+		expect(sub.style.getPropertyValue('--x')).toBe('1');
+	});
 });

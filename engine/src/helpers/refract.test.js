@@ -34,4 +34,14 @@ describe('refract (imperative)', () => {
 		await new Promise((r) => setTimeout(r, 0));
 		expect(el.style.getPropertyValue('--offset-y')).toBe('8px');
 	});
+
+	it('applies an existing attr immediately on mount', () => {
+		Barely.register('refract-mount').onMount((root) => {
+			refract(root, 'data-offset-x');
+		});
+		const el = makeEl('refract-mount');
+		el.setAttribute('data-offset-x', '12');
+		initElement(el);
+		expect(el.style.getPropertyValue('--offset-x')).toBe('12');
+	});
 });

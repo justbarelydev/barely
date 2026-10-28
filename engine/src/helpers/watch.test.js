@@ -53,4 +53,25 @@ describe('watch', () => {
 		await new Promise((r) => setTimeout(r, 0));
 		expect(cb).toHaveBeenCalledTimes(2);
 	});
+
+	it('fires immediately with the current value on mount', () => {
+		const cb = vi.fn();
+		Barely.register('watch-mount').onMount((root) => {
+			watch(root, 'data-x', cb);
+		});
+		const el = makeEl('watch-mount');
+		el.setAttribute('data-x', 'hello');
+		initElement(el);
+		expect(cb).toHaveBeenCalledWith(el, 'hello', undefined);
+	});
+
+	it('skips the mount report when the attr is absent', () => {
+		const cb = vi.fn();
+		Barely.register('watch-absent').onMount((root) => {
+			watch(root, 'data-x', cb);
+		});
+		const el = makeEl('watch-absent');
+		initElement(el);
+		expect(cb).not.toHaveBeenCalled();
+	});
 });
