@@ -18,4 +18,13 @@ export default [
 			'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 		},
 	},
+	{
+		// Node land: build scripts and config files
+		files: ['scripts/**', '*.config.js', 'eslint.config.js'],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+	},
 ];

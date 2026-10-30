@@ -1,0 +1,3 @@
+#!/bin/sh
+# Run lint before commit. eslint exits non-zero on errors, which blocks the commit.
+npm run lint
