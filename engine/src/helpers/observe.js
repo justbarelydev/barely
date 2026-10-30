@@ -24,8 +24,23 @@ const ROCallbacks = new WeakMap();
  * you don't need to dig through an array.
  *
  *   once: true - fire once, then stop watching (per-element, not per-pool)
+ *
+ * Accepts one element or any iterable (NodeList, Array, Set). One off()
+ * unobserves everything, and cleanup is registered once.
  */
-export const observe = (el, fn, opts = {}) => {
+export const observe = (els, fn, opts = {}) => {
+	const list = els instanceof Element ? [els] : [...els];
+	if (!list.length) return () => {};
+
+	const offs = list.map((el) => observeOne(el, fn, opts));
+	const off = () => offs.forEach((o) => o());
+	// Auto-cleanup like listen(): owned by the mounting component when called
+	// inside onMount, otherwise keyed on the first observed element.
+	registerCleanup(getCleanupOwner() ?? list[0], off);
+	return off;
+};
+
+const observeOne = (el, fn, opts = {}) => {
 	const { once = false, ...ioOpts } = opts;
 	const key = JSON.stringify(ioOpts);
 
@@ -54,15 +69,11 @@ export const observe = (el, fn, opts = {}) => {
 	IOEntries.set(el, { fn, once, key });
 	IOPool.get(key).observe(el);
 
-	const off = () => {
+	return () => {
 		const config = IOEntries.get(el);
 		IOPool.get(config?.key ?? key)?.unobserve(el);
 		IOEntries.delete(el);
 	};
-	// Auto-cleanup like listen(): owned by the mounting component when called
-	// inside onMount, otherwise keyed on the observed element itself.
-	registerCleanup(getCleanupOwner() ?? el, off);
-	return off;
 };
 
 /**
@@ -116,25 +127,38 @@ const checkLoop = (el) => {
  * One callback per element - calling this twice for the same element swaps the
  * callback instead of adding a second observer.
  *
- * If no element is given, observes the root itself - resize(root, fn).
+ *   resize(root, fn)     - observe the root itself, or any iterable
+ *   resize(root, el, fn) - observe el, cleanup owned by root
  */
 export const resize = (root, el, fn) => {
 	// Allow resize(root, fn) - el defaults to root
 	if (typeof el === 'function') {
 		fn = el;
 		el = root;
+		root = undefined;
 	}
 
+	const list = el instanceof Element ? [el] : [...el];
+	if (!list.length) return () => {};
+
+	const offs = list.map((el) => resizeOne(el, fn));
+	const off = () => offs.forEach((o) => o());
+	registerCleanup(getCleanupOwner() ?? root ?? list[0], off);
+	return off;
+};
+
+const resizeOne = (el, fn) => {
 	const key = 'default';
+
+	const off = () => {
+		ROPool.get(key)?.unobserve(el);
+		ROCallbacks.delete(el);
+	};
 
 	// If the element is already being observed, just swap the callback
 	if (ROCallbacks.has(el)) {
 		ROCallbacks.set(el, fn);
-		registerCleanup(getCleanupOwner() ?? root, () => {
-			ROPool.get(key)?.unobserve(el);
-			ROCallbacks.delete(el);
-		});
-		return;
+		return off;
 	}
 
 	// If there's no observer yet create it
@@ -160,8 +184,5 @@ export const resize = (root, el, fn) => {
 	ROCallbacks.set(el, fn);
 	ROPool.get(key).observe(el);
 
-	registerCleanup(getCleanupOwner() ?? root, () => {
-		ROPool.get(key)?.unobserve(el);
-		ROCallbacks.delete(el);
-	});
+	return off;
 };

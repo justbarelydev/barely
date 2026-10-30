@@ -172,17 +172,14 @@ export function initComponent(node, Registry) {
 
 	// defer init for data-lazy until the element scrolls into view
 	if (node.hasAttribute('data-lazy')) {
-		observe(
-			node,
-			(entry) => {
-				if (!entry.isIntersecting) return;
-				const bp = Registry.get(getComponentName(entry.target));
-				if (!bp) return;
-				initElement(entry.target);
-				attachAttrMO(entry.target, bp);
-			},
-			{ once: true },
-		);
+		const off = observe(node, (entry) => {
+			if (!entry.isIntersecting) return;
+			const bp = Registry.get(getComponentName(entry.target));
+			if (!bp) return;
+			initElement(entry.target);
+			attachAttrMO(entry.target, bp);
+			off();
+		});
 		return;
 	}
 
