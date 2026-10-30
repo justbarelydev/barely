@@ -63,6 +63,28 @@
 		scroll-snap-align: center;
 	}
 
+	/* Stacked mode: slides share one cell, driven by data-index (no scroll) */
+	[data-component='carousel'][data-mode~='stacked'] [data-track] {
+		display: grid;
+		overflow: hidden;
+		scroll-behavior: auto;
+		scroll-snap-type: none;
+	}
+
+	[data-component='carousel'][data-mode~='stacked'] [data-track] > * {
+		grid-area: 1 / 1;
+		scroll-snap-align: none;
+		opacity: 0;
+		visibility: hidden;
+	}
+
+	[data-component='carousel'][data-mode~='stacked']
+		[data-track]
+		> [data-active] {
+		opacity: 1;
+		visibility: visible;
+	}
+
 	/* Turn off smooth scrolling for prefers-reduced-motion */
 	@media (prefers-reduced-motion: reduce) {
 		[data-component='carousel'] [data-track] {

@@ -2,7 +2,6 @@
  * @justbarely/components - Base structural styles for all components
  */
 
-/* TODO: rename motion layer? i know we had theme, transitions(?), effects, etc */
 @layer components, base, theme, motion;
 
 @layer components {
@@ -13,29 +12,30 @@
 	}
 
 	/*
-	* Barely collapsible - a convenience style/hook.
-	* Since we can't easily animate from `display: none` yet, we hide elements
-	* in a way that keeps them measurable and animatable with full baseline
-	* browser support.
-	*
-	* [!] Hiding content this way only collapses the content box, so if you want
-	* padding on a collapsed element, put it inside a wrapper element. 
-	*
-	* --height defaults to initial so nested collapsibles don't inherit a parent
-	* element's measured height.
-	*
-	* Barely components intentionally skip using this so you don't have to add
-	* the attribute to every component every time.
- */
-	[data-collapsible] {
+	 * collapse - convenience styles/hooks
+	 * hide elements while keeping them animatable
+ 	 */
+	[data-collapse-height] {
 		--height: initial;
 		height: 0;
 		overflow: hidden;
 		visibility: hidden;
 	}
 
-	[data-collapsible][data-open] {
+	[data-collapse-height][data-open] {
 		height: var(--height, auto);
+		visibility: visible;
+	}
+
+	[data-collapse-width] {
+		--width: initial;
+		width: 0;
+		overflow: hidden;
+		visibility: hidden;
+	}
+
+	[data-collapse-width][data-open] {
+		width: var(--width, auto);
 		visibility: visible;
 	}
 } /* @layer components */

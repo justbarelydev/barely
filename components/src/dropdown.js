@@ -35,8 +35,8 @@ import './dropdown.css';
 import { wrap } from '@justbarely/core';
 import {
 	Barely,
-	child,
-	children,
+	el,
+	els,
 	ensureAttr,
 	placeTarget,
 	setAttrs,
@@ -55,7 +55,7 @@ Dropdown.onRefract('data-offset-y', unitize('px'));
 let dropdownId = 0;
 
 // Get all menu items (buttons or [role^="menuitem"]) inside a menu
-const menuItems = (menu) => children(menu, 'button, [role^="menuitem"]');
+const menuItems = (menu) => els(menu, 'button, [role^="menuitem"]');
 
 // Roving (cool word) tabindex - only the active item is tabbable
 const focusItem = (menu, item) => {
@@ -142,11 +142,11 @@ Dropdown.onMount((root) => {
 	// interfere with user-set properties on the same node.
 
 	// Trigger: explicit [data-trigger], or the first <button>
-	const trigger = child(root, '[data-trigger]') || child(root, 'button');
+	const trigger = el(root, '[data-trigger]') || el(root, 'button');
 	if (!trigger) return;
 
 	// Menu: scoped sibling [data-target]
-	const menu = child(root, '[data-target]');
+	const menu = el(root, '[data-target]');
 	if (!menu) return;
 	root._barelyMenu = menu;
 

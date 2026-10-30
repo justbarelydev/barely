@@ -35,7 +35,7 @@ import './tooltip.css';
 import {
 	Barely,
 	listen,
-	child,
+	el,
 	setAttrs,
 	ensureAttr,
 	unitize,
@@ -67,10 +67,10 @@ Tooltip.onMount((root) => {
 	}
 
 	// Trigger is [data-trigger] child, or root itself
-	const trigger = child(root, '[data-trigger]') || root;
+	const trigger = el(root, '[data-trigger]') || root;
 
 	// Tooltip is [data-target] child, or built from title/data-content
-	let tooltip = child(root, '[data-target]');
+	let tooltip = el(root, '[data-target]');
 
 	if (!tooltip) {
 		if (!title) return;

@@ -13,10 +13,12 @@
  *     </div>
  *   </div>
  *
- * Two containers. [data-triggers] (required) - it's the tablist and the strip.
- * The panels go in a wrapper element: the wrapper is what keeps them one item
- * in the root row, which vertical needs. Flat markup still works, but you'll
- * get a warning in onMount (you can ignore it).
+ * [data-triggers] (required for proper a11y) - becomes the tablist. If it's
+ * missing it warns and falls back to the root.
+ *
+ * It's also recommended to wrap the panels in a container. It's required to make
+ * vertical tabs work properly, and it's also just good practice. Styling and
+ * animating are both easier with a wrapper.
  *
  * [data-active] on the root is the source of truth; set it to switch tabs.
  * Marking an active child instead seeds the initial state before JS runs.
@@ -41,7 +43,7 @@ import {
 	Barely,
 	listen,
 	emit,
-	children,
+	els,
 	setAttrs,
 	hasMode,
 	ensureId,
@@ -53,15 +55,15 @@ const Tabs = Barely.register('tabs', { watch: ['data-active'] });
 // Auto-inject a11y on mount/change
 const syncAria = (root) => {
 	// Missing strip: fall back to the root, and warn in onMount
-	const strip = children(root, '[data-triggers]')[0];
+	const strip = els(root, '[data-triggers]')[0];
 	const listAttrs = { role: 'tablist' };
 	if (hasMode(root, 'vertical')) listAttrs['aria-orientation'] = 'vertical';
 	setAttrs(strip ?? root, listAttrs);
 	// Drop it from the root if a strip appeared later
 	if (strip) setAttrs(root, { role: false, 'aria-orientation': null });
 
-	const panels = children(root, '[data-target]');
-	const triggers = children(root, '[data-trigger]');
+	const panels = els(root, '[data-target]');
+	const triggers = els(root, '[data-trigger]');
 
 	// One id per instance
 	const base = ensureId(root, () => uid('tabs'));
@@ -95,10 +97,10 @@ const syncAria = (root) => {
 
 // Sync children and ARIA from the root value
 const sync = (root, key) => {
-	children(root, '[data-trigger]').forEach((el) =>
+	els(root, '[data-trigger]').forEach((el) =>
 		setAttrs(el, { 'data-active': el.dataset.trigger === key }),
 	);
-	children(root, '[data-target]').forEach((el) =>
+	els(root, '[data-target]').forEach((el) =>
 		setAttrs(el, { 'data-active': el.dataset.target === key }),
 	);
 	syncAria(root);
@@ -112,10 +114,10 @@ const activate = (root, key) => {
 // undefined previous is init; null means the attr just appeared
 Tabs.onChange('data-active', (root, key, previous) => {
 	if (previous === undefined) return;
-	const trigger = children(root, '[data-trigger]').find(
+	const trigger = els(root, '[data-trigger]').find(
 		(el) => el.dataset.trigger === key,
 	);
-	const target = children(root, '[data-target]').find(
+	const target = els(root, '[data-target]').find(
 		(el) => el.dataset.target === key,
 	);
 	emit(root, 'barely:beforechange', {
@@ -135,7 +137,7 @@ Tabs.onChange('data-active', (root, key, previous) => {
 
 // Keyboard: arrows rove, Home/End jump, Enter/Space activate
 const onKeydown = (e, tab, root) => {
-	const tabs = children(root, '[data-trigger]');
+	const tabs = els(root, '[data-trigger]');
 	const i = tabs.indexOf(tab);
 	if (i === -1) return;
 
@@ -175,7 +177,7 @@ const onKeydown = (e, tab, root) => {
 };
 
 Tabs.onMount((root) => {
-	if (!children(root, '[data-triggers]').length)
+	if (!els(root, '[data-triggers]').length)
 		console.warn(
 			'[barely] tabs: no [data-triggers] container. The panels end up inside the tablist; wrap the triggers.',
 			root,
@@ -184,8 +186,8 @@ Tabs.onMount((root) => {
 	// A tablist always has a selection, so never start empty.
 	const key =
 		root.dataset.active ||
-		children(root, '[data-trigger][data-active]')[0]?.dataset.trigger ||
-		children(root, '[data-trigger]')[0]?.dataset.trigger;
+		els(root, '[data-trigger][data-active]')[0]?.dataset.trigger ||
+		els(root, '[data-trigger]')[0]?.dataset.trigger;
 
 	if (key) {
 		setAttrs(root, { 'data-active': key });

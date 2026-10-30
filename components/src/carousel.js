@@ -18,6 +18,8 @@
  *   data-items-to-scroll - items to advance per arrow click (falls back to
  *                          items-to-show, then 1)
  *   data-mode="center"   - active item centered in the carousel
+ *   data-mode="stacked"  - slides stacked in one cell, index-driven (no scroll)
+ *   data-for="#carousel" - slide clicks drive another carousel
  *
  * State attrs (on root):
  *   data-index     - current item index (0-based)
@@ -28,8 +30,11 @@
  *
  * Events:
  *   barely:beforechange -> { index, child, track }               (arrow nav)
- *   barely:afterchange  -> { page, total, index, child, track }  (scroll settle)
+ *   barely:afterchange  -> { page, total, index, child, track }  (settle)
  *   barely:pagechange   -> { page, total }
+ *
+ * Input (drives this carousel):
+ *   barely:carouselnav  -> { dir } steps, { index } goes to index
  *
  * Note: --gap is the track's gap, read only by CSS (items-to-show width formula)
  */
@@ -42,7 +47,7 @@ import {
 	listen,
 	resize,
 	emit,
-	children,
+	els,
 	setAttrs,
 	hasMode,
 } from '@justbarely/engine';
@@ -75,9 +80,6 @@ const getCurrentIndex = (root, track, centerMode) => {
 	if (!offsets || !offsets.length) return 0;
 
 	const { scrollLeft, clientWidth } = track;
-	// 1px tolerance to avoid sub-pixel rounding errors on high-DPI displays
-	// (because getBoundingClientRect() returns floats but offsetLeft returns int)
-	const SUB_PIXEL_TOLERANCE = 1;
 
 	if (centerMode) {
 		// Find nearest item center using cache offsets to prevent index jumping
@@ -94,13 +96,21 @@ const getCurrentIndex = (root, track, centerMode) => {
 			}
 		}
 		return closest;
-	} else {
-		for (let i = offsets.length - 1; i >= 0; i--) {
-			if (offsets[i].left - SUB_PIXEL_TOLERANCE <= scrollLeft + 5)
-				return i;
+	}
+
+	// Nearest left edge to the scroll position. Flips at the midpoint of a
+	// glide in both directions (a left-edge threshold flipped late going
+	// forward and early going backward, which made synced carousels drift).
+	let closest = 0;
+	let minDiff = Infinity;
+	for (let i = 0; i < offsets.length; i++) {
+		const diff = Math.abs(offsets[i].left - scrollLeft);
+		if (diff < minDiff) {
+			minDiff = diff;
+			closest = i;
 		}
 	}
-	return 0;
+	return closest;
 };
 
 // Target scroll position for a child index, clamped to valid range.
@@ -122,7 +132,8 @@ const scrollTarget = (root, track, idx) => {
 const ARROWS = { ArrowLeft: -1, ArrowRight: 1 };
 
 // Advance by items-to-scroll, stepping from the last target we asked for, not the
-// scroll position. No [data-index] write here, that's owned by syncState().
+// scroll position. Scroll mode never writes [data-index] (syncState owns it);
+// stacked mode writes it directly because there is no scroll to settle on.
 const go = (root, dir) => {
 	const track = root._barelyTrack;
 	if (!track) return;
@@ -132,8 +143,10 @@ const go = (root, dir) => {
 	// 0 is a no-op and a negative walks backwards
 	const step = Math.max(1, toInt(itemsToScroll, toInt(itemsToShow, 1)));
 	const centerMode = hasMode(root, 'center');
-	const from =
-		root._barelyNavTarget ?? getCurrentIndex(root, track, centerMode);
+	const stacked = hasMode(root, 'stacked');
+	const from = stacked
+		? toInt(root.getAttribute('data-index'), 0)
+		: (root._barelyNavTarget ?? getCurrentIndex(root, track, centerMode));
 	const next = clamp(from + dir * step, 0, track.children.length - 1);
 
 	// Already at the first or last item, nowhere to go
@@ -148,14 +161,49 @@ const go = (root, dir) => {
 		});
 	}
 
+	if (stacked) {
+		root.setAttribute('data-index', next);
+		return;
+	}
+
 	root._barelyNavTarget = next;
 	track.scrollTo({
 		left: scrollTarget(root, track, next),
 	});
 };
 
+// Move [data-active] to the slide at `index`. Returns that child, or null.
+const setActive = (track, index) => {
+	const child = track.children[index];
+	if (!child) return null;
+	const active = track.querySelector('[data-active]');
+	if (active !== child) {
+		if (active) active.removeAttribute('data-active');
+		child.setAttribute('data-active', '');
+	}
+	return child;
+};
+
+// Write data-can-prev/next only when they change (per-root memo).
+const setPrevNext = (root, canPrev, canNext) => {
+	if (root._barelyPrev === canPrev && root._barelyNext === canNext) return;
+	root._barelyPrev = canPrev;
+	root._barelyNext = canNext;
+	setAttrs(root, {
+		'data-can-prev': canPrev,
+		'data-can-next': canNext,
+	});
+};
+
+// Announce in the live region only when the text changes.
+const announce = (liveRegion, text) => {
+	if (liveRegion._barelyText === text) return;
+	liveRegion._barelyText = text;
+	liveRegion.textContent = text;
+};
+
 Carousel.onMount((root) => {
-	const track = children(root, '[data-track]')[0];
+	const track = els(root, '[data-track]')[0];
 	if (!track) return;
 	root._barelyTrack = track;
 
@@ -168,54 +216,50 @@ Carousel.onMount((root) => {
 	root.appendChild(liveRegion);
 
 	const centerMode = hasMode(root, 'center');
+	const stacked = hasMode(root, 'stacked');
 	cacheOffsets(root, track);
 
-	// Sync arrows, [data-active], [data-index], and live region on scroll
-	// Only writes to the DOM when values change
-	const syncState = (() => {
-		let _prev = false,
-			_next = false,
-			_text = '';
+	// Sync state from the current drive. Scroll mode derives everything from
+	// scroll position; stacked mode derives it from data-index. Writes are
+	// deduped in setPrevNext / setActive / announce.
+	const syncScroll = () => {
+		const { scrollLeft, clientWidth, scrollWidth } = track;
+		setPrevNext(
+			root,
+			scrollLeft > 5,
+			scrollLeft + clientWidth < scrollWidth - 5,
+		);
 
-		return () => {
-			const { scrollLeft, clientWidth, scrollWidth } = track;
-			const canPrev = scrollLeft > 5;
-			const canNext = scrollLeft + clientWidth < scrollWidth - 5;
+		const index = getCurrentIndex(root, track, centerMode);
+		setActive(track, index);
 
-			if (canPrev !== _prev || canNext !== _next) {
-				setAttrs(root, {
-					'data-can-prev': canPrev,
-					'data-can-next': canNext,
-				});
-				_prev = canPrev;
-				_next = canNext;
+		// Sync [data-index] from scroll position (go() reads scroll, not attr).
+		// Skip during init to avoid overwriting an existing [data-index].
+		if (!root._barelyIniting) {
+			const current = toInt(root.getAttribute('data-index'), -1);
+			if (index !== current) {
+				root._barelySkip = true;
+				root.setAttribute('data-index', index);
 			}
+		}
+		announce(
+			liveRegion,
+			`Slide ${toPage(scrollLeft, clientWidth) + 1} of ${pageCount(scrollWidth, clientWidth)}`,
+		);
+	};
 
-			// Sync data-active from current scroll position
-			const index = getCurrentIndex(root, track, centerMode);
-			const child = track.children[index];
-			const active = track.querySelector('[data-active]');
-			if (active !== child) {
-				if (active) active.removeAttribute('data-active');
-				child.setAttribute('data-active', '');
-			}
+	const syncIndex = () => {
+		const index = clamp(
+			toInt(root.getAttribute('data-index'), 0),
+			0,
+			track.children.length - 1,
+		);
+		setPrevNext(root, index > 0, index < track.children.length - 1);
+		setActive(track, index);
+		announce(liveRegion, `Slide ${index + 1} of ${track.children.length}`);
+	};
 
-			// Sync [data-index] from scroll position (go() reads scroll, not attr)
-			// Skip during init to avoid overwriting existing [data-index]
-			if (!root._barelyIniting) {
-				const current = toInt(root.getAttribute('data-index'), -1);
-				if (index !== current) {
-					root._barelySkip = true;
-					root.setAttribute('data-index', index);
-				}
-			}
-			const text = `Slide ${toPage(scrollLeft, clientWidth) + 1} of ${pageCount(scrollWidth, clientWidth)}`;
-			if (_text !== text) {
-				liveRegion.textContent = text;
-				_text = text;
-			}
-		};
-	})();
+	const syncState = () => (stacked ? syncIndex() : syncScroll());
 
 	const emitPageChange = debounce(() => {
 		// Scroll has settled, so the next step re-bases on the real position
@@ -265,6 +309,32 @@ Carousel.onMount((root) => {
 		},
 		'[data-nav]',
 	);
+
+	// External controls (carousel-nav buttons, or a data-for carousel's slide
+	// clicks) emit barely:carouselnav on us.
+	listen(root, 'barely:carouselnav', (e) => {
+		if (e.detail.index != null)
+			root.setAttribute('data-index', e.detail.index);
+		else go(root, e.detail.dir);
+	});
+
+	// data-for="#main": this carousel's slide clicks drive another carousel
+	const forSelector = root.dataset.for;
+	if (forSelector) {
+		const target = document.querySelector(forSelector);
+		if (target) {
+			listen(
+				root,
+				'click',
+				(e, slide) => {
+					const index = [...track.children].indexOf(slide);
+					if (index >= 0)
+						emit(target, 'barely:carouselnav', { index });
+				},
+				'[data-track] > *',
+			);
+		}
+	}
 
 	// Keys trigger same go() like buttons, not native key scroll
 	// (the browser's ~40px step lands between snap points and gets dragged back)
@@ -330,15 +400,8 @@ Carousel.onChange('data-index', (root, value) => {
 	if (!track) return;
 
 	const index = clamp(toInt(value, 0), 0, track.children.length - 1);
-	const child = track.children[index];
+	const child = setActive(track, index);
 	if (!child) return;
-
-	// Sync data-active to the requested index
-	const active = track.querySelector('[data-active]');
-	if (active !== child) {
-		if (active) active.removeAttribute('data-active');
-		child.setAttribute('data-active', '');
-	}
 
 	// Skip scroll when set internally from go() or emitPageChange to avoid an
 	// attr update loop
@@ -349,6 +412,27 @@ Carousel.onChange('data-index', (root, value) => {
 
 	// Bump stamp so pending emitPageChange won't overwrite
 	root._barelyStamp = (root._barelyStamp || 0) + 1;
+
+	// Stacked mode: no scroll, so state and settle events derive from the
+	// index here instead of a scroll handler.
+	if (hasMode(root, 'stacked')) {
+		setAttrs(root, {
+			'data-can-prev': index > 0,
+			'data-can-next': index < track.children.length - 1,
+		});
+		emit(root, 'barely:afterchange', {
+			page: index + 1,
+			total: track.children.length,
+			index,
+			child,
+			track,
+		});
+		emit(root, 'barely:pagechange', {
+			page: index + 1,
+			total: track.children.length,
+		});
+		return;
+	}
 
 	if (track.scrollWidth <= track.clientWidth + 5) return;
 

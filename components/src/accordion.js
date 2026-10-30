@@ -52,7 +52,7 @@ import {
 	Barely,
 	listen,
 	emit,
-	children,
+	els,
 	hasMode,
 	setAttrs,
 	setCssVar,
@@ -71,7 +71,7 @@ const measurePanelWidth = (root) => {
 		(parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
 	const gap = parseFloat(cs.columnGap) || 0;
 	const gaps = gap * Math.max(0, root.children.length - 1);
-	const strip = children(root, '[data-trigger]').reduce(
+	const strip = els(root, '[data-trigger]').reduce(
 		(sum, t) => sum + t.offsetWidth,
 		0,
 	);
@@ -82,7 +82,7 @@ const measurePanelWidth = (root) => {
 // stops a 0-width panel wrapping and ballooning the container height.
 const setPanelWidth = (root) => {
 	const width = measurePanelWidth(root);
-	children(root, '[data-target]').forEach((panel) =>
+	els(root, '[data-target]').forEach((panel) =>
 		setCssVar(panel, 'panel-width', width, 'px'),
 	);
 };
@@ -90,8 +90,8 @@ const setPanelWidth = (root) => {
 // Inject ARIA attributes. Ids are scoped per instance, so two accordions using
 // the same keys don't duplicate ids or cross-wire aria-controls.
 const syncAria = (root) => {
-	const panels = children(root, '[data-target]');
-	const triggers = children(root, '[data-trigger]');
+	const panels = els(root, '[data-target]');
+	const triggers = els(root, '[data-trigger]');
 	const base = ensureId(root, () => uid('accordion'));
 
 	// Ids first: the wiring below reads them back
@@ -139,9 +139,9 @@ const setPanelOpen = (root, panel, trigger, open) => {
 
 // Map of key -> { panel, trigger } for the handlers
 const panelMap = (root) => {
-	const triggers = children(root, '[data-trigger]');
+	const triggers = els(root, '[data-trigger]');
 	const map = new Map();
-	children(root, '[data-target]').forEach((panel) => {
+	els(root, '[data-target]').forEach((panel) => {
 		const key = panel.dataset.target;
 		map.set(key, {
 			panel,
@@ -176,7 +176,7 @@ const toggle = (root, key) => {
 		open,
 		trigger,
 		target: panel,
-		openPanels: children(root, '[data-target][data-open]'),
+		openPanels: els(root, '[data-target][data-open]'),
 	});
 };
 
@@ -198,7 +198,7 @@ const initCustom = (root) => {
 		resize(root, () => setPanelWidth(root));
 	} else {
 		// Set --height for any open panels so they can animate closed
-		children(root, '[data-target][data-open]').forEach((panel) =>
+		els(root, '[data-target][data-open]').forEach((panel) =>
 			setSize(panel),
 		);
 	}
@@ -221,7 +221,7 @@ const initNative = (root) => {
 				open: detail.open,
 				detail,
 				summary: detail.querySelector(':scope > summary'),
-				openDetails: children(root, 'details[open]'),
+				openDetails: els(root, 'details[open]'),
 			});
 		},
 		true,
@@ -229,5 +229,5 @@ const initNative = (root) => {
 };
 
 Accordion.onMount((root) => {
-	children(root, 'details').length > 0 ? initNative(root) : initCustom(root);
+	els(root, 'details').length > 0 ? initNative(root) : initCustom(root);
 });

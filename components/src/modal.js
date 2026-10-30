@@ -25,7 +25,7 @@ import {
 	Barely,
 	listen,
 	emit,
-	children,
+	els,
 	setAttrs,
 	waitForAnimation,
 } from '@justbarely/engine';
@@ -59,7 +59,7 @@ const hide = (root, dialog) => {
 };
 
 Modal.onMount((root) => {
-	children(root, 'dialog[data-target]').forEach((dialog) => {
+	els(root, 'dialog[data-target]').forEach((dialog) => {
 		// Intercept Esc press before the browser closes the dialog
 		dialog.addEventListener('cancel', (e) => {
 			e.preventDefault();
@@ -92,7 +92,7 @@ Modal.onMount((root) => {
 		'click',
 		(e, trigger) => {
 			const key = trigger.dataset.trigger;
-			const dialog = children(root, `[data-target="${key}"]`)[0];
+			const dialog = els(root, `[data-target="${key}"]`)[0];
 			if (!dialog || dialog.tagName !== 'DIALOG') return;
 			show(root, dialog);
 		},
