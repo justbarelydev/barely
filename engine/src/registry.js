@@ -8,7 +8,7 @@
 
 import { forwardSync } from './helpers/sync';
 import { registerCleanup, setCleanupOwner } from './helpers/cleanup';
-import { getComponentName, children } from './helpers/elements';
+import { getComponentName, els } from './helpers/elements';
 import { setAttrVar } from './helpers/attr';
 import { emit } from './helpers/emit';
 import { initComponent } from './mutation';
@@ -74,7 +74,7 @@ export function register(
 	// register() are in place, then init those elements.
 	if (initialized) {
 		Promise.resolve().then(() => {
-			children(document, `[data-component="${name}"]`).forEach((el) =>
+			els(document, `[data-component="${name}"]`).forEach((el) =>
 				initComponent(el, Registry),
 			);
 		});

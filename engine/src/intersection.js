@@ -3,7 +3,7 @@
  */
 
 import { COMPONENT } from './constants';
-import { children } from './helpers/elements';
+import { els } from './helpers/elements';
 import { initComponent } from './mutation';
 
 /**
@@ -15,5 +15,5 @@ import { initComponent } from './mutation';
  * @param {Map} Registry
  */
 export const initIntersection = (Registry) => {
-	children(document, COMPONENT).forEach((el) => initComponent(el, Registry));
+	els(document, COMPONENT).forEach((el) => initComponent(el, Registry));
 };

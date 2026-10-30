@@ -11,7 +11,7 @@
 
 import { COMPONENT, SYNC } from './constants';
 import { bindSyncElement, forwardSync } from './helpers/sync';
-import { getComponentName, children } from './helpers/elements';
+import { getComponentName, els } from './helpers/elements';
 import { initElement, refractValue } from './registry';
 import { setAttrVar } from './helpers/attr';
 import { runCleanup } from './helpers/cleanup';
@@ -193,7 +193,7 @@ export function initComponent(node, Registry) {
 
 // Init and slap MO on dynamically added components' children
 function initComponentChildren(node, Registry) {
-	children(node, COMPONENT).forEach((el) => initComponent(el, Registry));
+	els(node, COMPONENT).forEach((el) => initComponent(el, Registry));
 }
 
 // Bind dynamically added [data-sync] elements
@@ -203,7 +203,7 @@ function tryBindSync(el) {
 
 // Bind dynamically added [data-sync] children
 function bindSyncChildren(node) {
-	children(node, SYNC).forEach((el) => bindSyncElement(el));
+	els(node, SYNC).forEach((el) => bindSyncElement(el));
 }
 
 // Write CSS vars + forward sync for an element's data-refract attrs
@@ -259,10 +259,10 @@ export const initMutation = (Registry) => {
 	});
 
 	// MO only catches dynamically added elements - bind existing ones
-	children(document, SYNC).forEach((el) => bindSyncElement(el));
+	els(document, SYNC).forEach((el) => bindSyncElement(el));
 
 	// Bind existing ad-hoc [data-refract] on non-components
-	children(document, '[data-refract]').forEach((el) => {
+	els(document, '[data-refract]').forEach((el) => {
 		if (!el.hasAttribute('data-component')) {
 			attachAttrMO(el, { watch: [], refract: [], changes: {} });
 			applyRefract(el);
@@ -270,10 +270,13 @@ export const initMutation = (Registry) => {
 		}
 	});
 
-	// Catch dynamically added data-refract / data-sync attrs
+	// Catch dynamically added data-refract / data-sync / data-sync-attrs attrs
 	const attrMo = new MutationObserver((mutations) => {
 		for (const { target, attributeName } of mutations) {
-			if (attributeName === 'data-sync') {
+			if (
+				attributeName === 'data-sync' ||
+				attributeName === 'data-sync-attrs'
+			) {
 				bindSyncElement(target);
 			} else if (!target.hasAttribute('data-component')) {
 				attachAttrMO(target, { watch: [], refract: [], changes: {} });
@@ -285,6 +288,6 @@ export const initMutation = (Registry) => {
 	attrMo.observe(document.body, {
 		attributes: true,
 		subtree: true,
-		attributeFilter: ['data-refract', 'data-sync'],
+		attributeFilter: ['data-refract', 'data-sync', 'data-sync-attrs'],
 	});
 };

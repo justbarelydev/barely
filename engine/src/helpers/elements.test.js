@@ -1,15 +1,15 @@
 // @vitest-environment happy-dom
 import { describe, it, expect } from 'vitest';
 import {
-	children,
-	child,
+	els,
+	el,
 	closestComponent,
 	findComponents,
 	showElement,
 	hideElement,
 } from '@justbarely/engine';
 
-describe('children', () => {
+describe('els', () => {
 	it('scopes to the component root, excluding nested components', () => {
 		document.body.innerHTML = `
 			<div id="outer" data-component="tabs">
@@ -17,21 +17,18 @@ describe('children', () => {
 				<div data-component="accordion"><div data-trigger>inner</div></div>
 			</div>`;
 		const outer = document.querySelector('#outer');
-		const triggers = children(outer, '[data-trigger]');
+		const triggers = els(outer, '[data-trigger]');
 		expect(triggers).toHaveLength(1);
 		expect(triggers[0].textContent).toBe('outer');
 	});
 
-	it('child returns the first scoped match', () => {
+	it('el returns the first scoped match', () => {
 		document.body.innerHTML = `
 			<div id="outer" data-component="tabs">
 				<div data-trigger>outer</div>
 				<div data-component="accordion"><div data-trigger>inner</div></div>
 			</div>`;
-		const trigger = child(
-			document.querySelector('#outer'),
-			'[data-trigger]',
-		);
+		const trigger = el(document.querySelector('#outer'), '[data-trigger]');
 		expect(trigger.textContent).toBe('outer');
 	});
 });

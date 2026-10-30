@@ -9,33 +9,33 @@ import { COMPONENT } from '../constants';
  * [data-component] it will stop walking up the tree when it finds the first
  * component instance, allowing for nested components without leaks.
  *
- *   children('.foo')         // document-level query
- *   children(root, '.foo')   // scoped to component
+ *   els('.foo')         // document-level query
+ *   els(root, '.foo')   // scoped to component
  *
  * @param {Element} root - element to query from
  * @param {string} selector - selector to look for
  * @returns Array<Element>
  */
-export const children = (root, selector) => {
+export const els = (root, selector) => {
 	// Single-arg: document-level query
 	if (typeof root === 'string') return [...document.querySelectorAll(root)];
 
-	const els = [...root.querySelectorAll(selector)];
+	const found = [...root.querySelectorAll(selector)];
 
 	return root.hasAttribute?.('data-component')
-		? els.filter((el) => el.closest('[data-component]') === root)
-		: els;
+		? found.filter((el) => el.closest('[data-component]') === root)
+		: found;
 };
 
 /**
- * Convenience wrapper for children() that returns the first match
- * or null. Like querySelector but with the guards from children()
+ * Convenience wrapper for els() that returns the first match
+ * or null. Like querySelector but with the guards from els()
  *
  * @param {Element} root
  * @param {string} selector
  * @returns {Element|null}
  */
-export const child = (root, selector) => children(root, selector)[0] ?? null;
+export const el = (root, selector) => els(root, selector)[0] ?? null;
 
 /**
  * Get a component's name from data-component attribute
