@@ -44,7 +44,7 @@
  *   barely:afterchange  -> { open, target }
  */
 
-import './base.css';
+import '../base.css';
 import './popover.css';
 
 import {

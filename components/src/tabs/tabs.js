@@ -35,7 +35,7 @@
  *   barely:afterchange  -> { active, previous, trigger, target }  (after sync)
  */
 
-import './base.css';
+import '../base.css';
 import './tabs.css';
 
 import { wrap } from '@justbarely/core';

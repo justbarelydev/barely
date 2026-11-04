@@ -1,0 +1,130 @@
+/*
+ * @justbarely/components - Carousel structural styles
+ * 
+ * /!\ Important: If you want to change the gap do it by updating the --gap var.
+ * You can update the var wherever/however you want, but that var is structural
+ * for [data-items-to-show]
+ * 
+ */
+
+@layer components {
+	[data-component='carousel'] {
+		--gap: 1rem;
+		position: relative;
+	}
+
+	[data-component='carousel'] [data-track] {
+		display: flex;
+		gap: var(--gap);
+		align-items: start;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scroll-behavior: smooth;
+		scroll-snap-type: x mandatory;
+		scrollbar-width: none;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	[data-component='carousel'] [data-track]::-webkit-scrollbar {
+		display: none;
+	}
+
+	[data-component='carousel'] [data-track] > * {
+		scroll-snap-align: start;
+		flex: 0 0 auto;
+	}
+
+	/* Media in a slide scales to its cell; text overflow is the implementer's. */
+	[data-component='carousel']
+		[data-track]
+		:is(img, picture, video, canvas, svg) {
+		max-width: 100%;
+	}
+
+	/* Fixed-size items when items-to-show is set. The basis follows the flex
+	   direction, so the same formula sizes a vertical carousel too. */
+	[data-component='carousel'][data-items-to-show] [data-track] {
+		--gap-count: calc(var(--items-to-show, 1) - 1);
+		--gap-total: calc(var(--gap) * var(--gap-count));
+		--item-size: calc((100% - var(--gap-total)) / var(--items-to-show, 1));
+	}
+
+	[data-component='carousel'][data-items-to-show] [data-track] > * {
+		flex: 1 0 var(--item-size);
+		min-width: 0;
+		min-height: 0;
+	}
+
+	/* Vertical mode */
+	[data-component='carousel'][data-mode~='vertical'] [data-track] {
+		flex-direction: column;
+		align-items: stretch;
+		overflow-x: hidden;
+		overflow-y: auto;
+		overscroll-behavior: auto;
+		scroll-snap-type: y mandatory;
+	}
+
+	/*
+	 * Disabled nav controls stay visible and focusable - a control that
+	 * disappears at a boundary is worse than a dim one. Override opacity in a
+	 * theme layer for a different look.
+	 */
+	[data-component='carousel'] [data-nav][aria-disabled='true'],
+	[data-component='carousel-nav'] [data-nav][aria-disabled='true'] {
+		opacity: 0.4;
+	}
+
+	/* Screen-reader-only live region for page announcements */
+	[data-component='carousel'] [aria-live] {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	/* Center mode */
+	[data-component='carousel'][data-mode~='center'] [data-track] > * {
+		scroll-snap-align: center;
+	}
+
+	/*
+	 * Index mode: no scroll, just carousel items stacked on top of each other.
+	 * Show the current item (or page if items-to-show is present) and hide the
+	 * rest. Defaults to 1 item per page.
+	 */
+	[data-component='carousel'][data-mode~='index'] [data-track] {
+		display: grid;
+		grid-template-columns: repeat(var(--items-to-show, 1), minmax(0, 1fr));
+		grid-template-rows: 1fr;
+		overflow: hidden;
+		scroll-behavior: auto;
+		scroll-snap-type: none;
+	}
+
+	[data-component='carousel'][data-mode~='index'] [data-track] > * {
+		grid-row: 1;
+		min-width: 0;
+		min-height: 0;
+		scroll-snap-align: none;
+		opacity: 0;
+		visibility: hidden;
+	}
+
+	[data-component='carousel'][data-mode~='index']
+		[data-track]
+		> [data-in-page] {
+		opacity: 1;
+		visibility: visible;
+	}
+
+	/* Turn off smooth scrolling for prefers-reduced-motion */
+	@media (prefers-reduced-motion: reduce) {
+		[data-component='carousel'] [data-track] {
+			scroll-behavior: auto;
+		}
+	}
+} /* @layer components */

@@ -28,8 +28,8 @@
  *   data-hide-delay    - ms before hiding
  */
 
-import './base.css';
-import './positioning.css';
+import '../base.css';
+import '../positioning.css';
 import './tooltip.css';
 
 import {

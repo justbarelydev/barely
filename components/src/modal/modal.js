@@ -18,7 +18,7 @@
  *   barely:afterchange  -> { open, dialog }
  */
 
-import './base.css';
+import '../base.css';
 import './modal.css';
 
 import {

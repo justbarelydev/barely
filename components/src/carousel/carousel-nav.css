@@ -1,0 +1,35 @@
+/*
+ * @justbarely/components - Carousel Nav
+ *
+ * The scrollable filmstrip form of carousel-nav, opt-in via data-mode="scroll".
+ * Structural only: overflow, snap, and smoothness. Size, gap, and chrome are
+ * theme concerns (--gap is the spacing hook, shared with the carousel).
+ */
+
+@layer components {
+	[data-component='carousel-nav'][data-mode~='scroll'] {
+		display: flex;
+		gap: var(--gap, 0.5rem);
+		max-width: 100%;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scroll-snap-type: x proximity;
+		scroll-behavior: smooth;
+		scrollbar-width: none;
+	}
+
+	[data-component='carousel-nav'][data-mode~='scroll']::-webkit-scrollbar {
+		display: none;
+	}
+
+	[data-component='carousel-nav'][data-mode~='scroll'] > [data-nav] {
+		flex: 0 0 auto;
+		scroll-snap-align: center;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		[data-component='carousel-nav'][data-mode~='scroll'] {
+			scroll-behavior: auto;
+		}
+	}
+}

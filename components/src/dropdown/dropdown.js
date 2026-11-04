@@ -28,8 +28,8 @@
  *   barely:dropdownselect -> { item, value }
  */
 
-import './base.css';
-import './positioning.css';
+import '../base.css';
+import '../positioning.css';
 import './dropdown.css';
 
 import { wrap } from '@justbarely/core';

@@ -45,7 +45,7 @@
  *                          { open, detail, summary, openDetails }            (native)
  */
 
-import './base.css';
+import '../base.css';
 import './accordion.css';
 
 import {
