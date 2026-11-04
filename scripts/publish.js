@@ -127,6 +127,26 @@ function caretSatisfies(range, version) {
 	return v.major === 0 && v.minor === 0 && v.patch === rpat;
 }
 
+const DEP_FIELDS = [
+	'dependencies',
+	'devDependencies',
+	'peerDependencies',
+	'optionalDependencies',
+];
+
+/**
+ * Packages that declare `published` in any dependency field. The ui
+ * meta-package depends on everything, so every publish of a dependency
+ * changes ui's bundle content.
+ */
+function dependentsOf(published) {
+	return packages.filter(
+		(other) =>
+			other.pkg.name !== published.name &&
+			DEP_FIELDS.some((field) => published.name in (other.pkg[field] || {})),
+	);
+}
+
 /**
  * Update dependent packages' caret ranges when a published package's new
  * version falls outside what the range still allows (e.g. core 0.1.x → 0.2.0
@@ -134,14 +154,8 @@ function caretSatisfies(range, version) {
  */
 function bumpDependentRanges(published, newVersion) {
 	const updated = [];
-	for (const other of packages) {
-		if (other.pkg.name === published.name) continue;
-		for (const field of [
-			'dependencies',
-			'devDependencies',
-			'peerDependencies',
-			'optionalDependencies',
-		]) {
+	for (const other of dependentsOf(published)) {
+		for (const field of DEP_FIELDS) {
 			const deps = other.pkg[field];
 			if (!deps || !(published.name in deps)) continue;
 			const range = deps[published.name];
@@ -238,7 +252,7 @@ async function main() {
 
 	const startHead = git(['rev-parse', '--short', 'HEAD']);
 	const published = [];
-	const rangeBumped = new Set();
+	const autoBump = new Set();
 
 	for (const p of candidates) {
 		const uncommitted = hasUncommitted(p);
@@ -323,11 +337,14 @@ async function main() {
 		writeJson(p.file, p.pkg);
 		const rangeNotes = bumpDependentRanges(p.pkg, newVersion);
 		for (const note of rangeNotes) {
-			rangeBumped.add(note.pkg);
 			console.log(
 				`  ${yellow('⚠')} ${note.pkg.pkg.name} depends on ${p.pkg.name}: ${dim(note.range)} → ${note.to}`,
 			);
 		}
+		// A dependent's bundle content changes whenever its dependency bumps,
+		// even for a patch that stays inside the caret range - queue them all
+		// for a follow-up bump below.
+		for (const dep of dependentsOf(p.pkg)) autoBump.add(dep);
 
 		// One commit carries the work + the version bump.
 		git(['add', '--', p.dir]);
@@ -339,20 +356,22 @@ async function main() {
 		console.log(`  ${green(`✓ committed ${hash} + tagged ${tagName}`)}`);
 	}
 
-	// Dependents whose range was rewritten but that weren't published
-	// themselves - the ui meta-package depends on everything, so every publish
-	// touches it. Their bundle content changed (they re-export the bumped
-	// package), so bump their own version too, then commit + tag. Patch is the
-	// conservative default: their API didn't change, only what's inside.
-	for (const dep of rangeBumped) {
+	// Dependents of every published package that weren't published themselves
+	// - the ui meta-package depends on everything, so any publish changes its
+	// bundle content (it re-exports the bumped package). Bump each dependent's
+	// own version too, then commit + tag. Patch is the conservative default:
+	// their API didn't change, only what's inside.
+	for (const dep of autoBump) {
 		const alreadyPublished = published.some(
 			(x) => x.p.pkg.name === dep.pkg.name,
 		);
-		if (alreadyPublished || !hasUncommitted(dep)) continue;
+		if (alreadyPublished) continue;
 
 		const files = gitStatus(dep.dir).map((s) => s.slice(3)).filter(Boolean);
-		// Only the manifest was rewritten; anything else is author WIP - leave
-		// it alone rather than sweeping it into a dependency bump.
+		// Only auto-bump when the dependent's tree is clean, or its only
+		// uncommitted change is package.json (a range rewrite above). Anything
+		// else is author WIP - leave it alone rather than sweeping it into a
+		// dependency bump.
 		if (!files.every((f) => f === 'package.json')) continue;
 
 		const oldVersion = dep.pkg.version;
