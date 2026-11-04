@@ -238,6 +238,7 @@ async function main() {
 
 	const startHead = git(['rev-parse', '--short', 'HEAD']);
 	const published = [];
+	const rangeBumped = new Set();
 
 	for (const p of candidates) {
 		const uncommitted = hasUncommitted(p);
@@ -322,6 +323,7 @@ async function main() {
 		writeJson(p.file, p.pkg);
 		const rangeNotes = bumpDependentRanges(p.pkg, newVersion);
 		for (const note of rangeNotes) {
+			rangeBumped.add(note.pkg);
 			console.log(
 				`  ${yellow('⚠')} ${note.pkg.pkg.name} depends on ${p.pkg.name}: ${dim(note.range)} → ${note.to}`,
 			);
@@ -335,6 +337,38 @@ async function main() {
 		git(['tag', tagName]);
 		published.push({ p, oldVersion, newVersion, hash, tag: tagName });
 		console.log(`  ${green(`✓ committed ${hash} + tagged ${tagName}`)}`);
+	}
+
+	// Dependents whose range was rewritten but that weren't published
+	// themselves - the ui meta-package depends on everything, so every publish
+	// touches it. Their bundle content changed (they re-export the bumped
+	// package), so bump their own version too, then commit + tag. Patch is the
+	// conservative default: their API didn't change, only what's inside.
+	for (const dep of rangeBumped) {
+		const alreadyPublished = published.some(
+			(x) => x.p.pkg.name === dep.pkg.name,
+		);
+		if (alreadyPublished || !hasUncommitted(dep)) continue;
+
+		const files = gitStatus(dep.dir).map((s) => s.slice(3)).filter(Boolean);
+		// Only the manifest was rewritten; anything else is author WIP - leave
+		// it alone rather than sweeping it into a dependency bump.
+		if (!files.every((f) => f === 'package.json')) continue;
+
+		const oldVersion = dep.pkg.version;
+		const newVersion = bumpVersion(oldVersion, 'patch');
+		dep.pkg.version = newVersion;
+		writeJson(dep.file, dep.pkg);
+
+		git(['add', '--', dep.dir]);
+		git(['commit', '-m', `${dep.pkg.name}: ${newVersion}`]);
+		const hash = git(['rev-parse', '--short', 'HEAD']);
+		const tagName = `${dep.pkg.name}@${newVersion}`;
+		git(['tag', tagName]);
+		published.push({ p: dep, oldVersion, newVersion, hash, tag: tagName });
+		console.log(
+			`  ${green(`✓ ${dep.pkg.name}  ${dim(`${oldVersion} → `)}${newVersion}  (${hash}, ${tagName})`)}`,
+		);
 	}
 
 	// Final review + escape hatch. Everything is still local - push is manual.
