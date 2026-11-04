@@ -1,6 +1,6 @@
 {
 	"name": "@justbarely/core",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Pure, environment-agnostic math and utility functions for @justbarely",
 	"license": "MIT",
 	"files": [
