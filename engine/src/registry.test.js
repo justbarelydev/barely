@@ -3,12 +3,38 @@ import { describe, it, expect, vi } from 'vitest';
 import { Barely, listen, runCleanup } from '@justbarely/engine';
 import { Registry, initElement } from '../../engine/src/registry.js';
 import { attachAttrMO } from '../../engine/src/mutation.js';
+import { bindSyncElement } from './helpers/sync.js';
 
 const makeEl = (name) => {
 	const el = document.createElement('div');
 	el.setAttribute('data-component', name);
 	return el;
 };
+
+describe('initElement mount-time state', () => {
+	it('publishes watched attrs written during mount to data-sync subscribers', () => {
+		const Source = Barely.register('state-source', { watch: ['data-count'] });
+		Source.onMount((el) => {
+			// A default/derived value that only exists after mount.
+			el.setAttribute('data-count', '7');
+		});
+
+		const src = makeEl('state-source');
+		src.id = 'mount-state';
+		const sub = document.createElement('div');
+		sub.dataset.sync = '#mount-state';
+		document.body.append(src, sub);
+
+		// Subscriber binds first, exactly like static markup: initMutation binds
+		// data-sync before components mount.
+		bindSyncElement(sub);
+		expect(sub.hasAttribute('data-count')).toBe(false);
+
+		initElement(src);
+
+		expect(sub.getAttribute('data-count')).toBe('7');
+	});
+});
 
 describe('initElement', () => {
 	it('marks ready and emits barely:mount', () => {

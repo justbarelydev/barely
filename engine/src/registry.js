@@ -152,6 +152,15 @@ export const initElement = (el) => {
 		forwardSync(el, key, val);
 	});
 
+	// Mount writes state (defaults and derived values). The loop above only
+	// forwards attributes that already existed on the element, so a subscriber
+	// bound before mount would miss them. Republish once the mount is done.
+	const publishWatch = () =>
+		blueprint.watch.forEach((key) => {
+			const val = el.getAttribute(key);
+			if (val != null) forwardSync(el, key, val);
+		});
+
 	const pending = [];
 	blueprint.onMount.forEach((mount) => {
 		const result = setCleanupOwner(el, () => mount(el));
@@ -159,6 +168,8 @@ export const initElement = (el) => {
 		else if (result && typeof result.then === 'function')
 			pending.push(result);
 	});
+
+	if (!pending.length) publishWatch();
 
 	// Async mounts: data-ready is immediate, data-status tracks the async state
 	// so skeletons can key off [data-status="loading"].

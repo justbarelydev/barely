@@ -46,6 +46,11 @@ const syncableAttrs = (el) => {
 
 // Copy one attr plus its CSS var to a subscriber
 const syncTo = (sub, key, value) => {
+	if (value == null) {
+		sub.removeAttribute(key);
+		sub.style.removeProperty(`--${key.replace(/^data-/, '')}`);
+		return;
+	}
 	sub.setAttribute(key, value);
 	sub.style.setProperty(`--${key.replace(/^data-/, '')}`, value);
 };
@@ -61,7 +66,7 @@ const subscribe = (source, subscriber, attrs) => {
 
 	for (const attr of attrs ?? syncableAttrs(source)) {
 		const val = source.getAttribute(attr);
-		if (val != null) syncTo(subscriber, attr, val);
+		syncTo(subscriber, attr, val);
 	}
 };
 
@@ -86,7 +91,11 @@ const ensureObserved = (source, attrs) => {
 	entry.mo = new MutationObserver((mutations) => {
 		for (const m of mutations) {
 			const value = source.getAttribute(m.attributeName);
-			if (value === m.oldValue) continue;
+			// A removal must reach subscribers too, since syncTo clears them.
+			// oldValue is reported as null for removals, so we need to check
+			// for that too.
+			if (value !== null && value === m.oldValue) continue;
+
 			// Only subscribers that whitelisted this attr - auto-watching
 			// must not expand the source's broadcast to unfiltered
 			// (data-sync) subscribers.

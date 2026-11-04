@@ -62,6 +62,21 @@ describe('sync whitelist', () => {
 		expect(sub.getAttribute('data-open')).toBe('true');
 	});
 
+	it('removes mirrored attrs when the source removes them', async () => {
+		document.body.innerHTML =
+			'<div id="src" data-can-next=""></div><div id="sub"></div>';
+		const src = document.querySelector('#src');
+		const sub = document.querySelector('#sub');
+		sync(sub, '#src', ['data-can-next']);
+		expect(sub.hasAttribute('data-can-next')).toBe(true);
+
+		src.removeAttribute('data-can-next');
+		await new Promise((r) => setTimeout(r, 0));
+
+		expect(sub.hasAttribute('data-can-next')).toBe(false);
+		expect(sub.style.getPropertyValue('--can-next')).toBe('');
+	});
+
 	it('replaces a previous subscription for the same element', () => {
 		document.body.innerHTML = '<div id="src"></div><div id="sub"></div>';
 		const src = document.querySelector('#src');

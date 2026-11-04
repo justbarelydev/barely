@@ -70,7 +70,10 @@ function createAttrObserver(blueprint) {
 
 			const { target, attributeName, oldValue } = mutation;
 			const newValue = target.getAttribute(attributeName);
-			if (newValue === oldValue) continue;
+			// Removals (newValue null) have to reach onChange and forwardSync.
+			// oldValue is reported as null for removals, so we need to check for
+			// that too.
+			if (newValue !== null && newValue === oldValue) continue;
 			if (isRunaway(target, attributeName)) continue;
 
 			// Refract data-attr values to CSS vars (onRefract)
