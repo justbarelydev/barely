@@ -74,6 +74,8 @@ const makeCarousel = (
 			right: (i + 1) * size - (vertical ? 0 : track.scrollLeft),
 			top: i * size - (vertical ? track.scrollTop : 0),
 			bottom: (i + 1) * size - (vertical ? track.scrollTop : 0),
+			width: size,
+			height: size,
 		});
 		track.appendChild(slide);
 	}
@@ -119,8 +121,9 @@ describe('carousel state', () => {
 		expect(track.children[0].hasAttribute('data-active')).toBe(true);
 		expect(root.hasAttribute('data-can-prev')).toBe(false);
 		expect(root.hasAttribute('data-can-next')).toBe(true);
-		expect(root.getAttribute('data-page')).toBe('1');
-		expect(root.getAttribute('data-total')).toBe('5');
+		// No data-items-to-show: there are no pages, just one item per view.
+		expect(root.hasAttribute('data-page')).toBe(false);
+		expect(root.hasAttribute('data-total')).toBe(false);
 	});
 
 	it('makes the scroll container the tab stop, not the root', () => {
@@ -366,6 +369,38 @@ describe('carousel stepping', () => {
 		expect(root.getAttribute('data-index')).toBe('4');
 		expect(track.children[4].hasAttribute('data-active')).toBe(true);
 		expect(navButton(root, 'next').getAttribute('aria-disabled')).toBe('true');
+	});
+
+	it('steps by one even when the edge item cannot center', async () => {
+		// 5 items of 100 in a 300 viewport: item 0 and item 1 both rest at 0
+		// (neither can center). The index still advances by exactly one - the
+		// step is a state change, not a promise to scroll.
+		const { root, track } = makeCarousel('center-step', {
+			mode: 'center',
+			viewport: 300,
+			nav: true,
+		});
+
+		navButton(root, 'next').click();
+		await flush();
+		expect(root.getAttribute('data-index')).toBe('1');
+		expect(track.children[1].hasAttribute('data-active')).toBe(true);
+	});
+
+	it('keeps pages when items-to-show is authored as 1', async () => {
+		// An explicit items-to-show opts into pagination, even at 1 per page:
+		// data-page is then index + 1 rather than dropped.
+		const { root } = makeCarousel('one-per-page', {
+			slides: 5,
+			itemsToShow: 1,
+		});
+
+		expect(root.getAttribute('data-page')).toBe('1');
+		expect(root.getAttribute('data-total')).toBe('5');
+
+		root.setAttribute('data-index', '3');
+		await flush();
+		expect(root.getAttribute('data-page')).toBe('4');
 	});
 
 	it('counts a trailing orphan as its own page', async () => {

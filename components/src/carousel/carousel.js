@@ -35,13 +35,13 @@
  *   data-active    - current active item
  *   data-can-prev  - there are items behind, you can go backward
  *   data-can-next  - there are items ahead, you can go forward
- *   data-page      - current page, 1-based, index + items-to-show
- *   data-total     - total page count
+ *   data-page      - current page, 1-based (only with data-items-to-show)
+ *   data-total     - total page count (only with data-items-to-show)
  *
  * Events:
  *   barely:beforechange -> { index, child, track }              (intent accepted)
  *   barely:afterchange  -> { index, page, total, child, track } (settled)
- *   barely:pagechange   -> { page, total }                      (page changed)
+ *   barely:pagechange   -> { page, total }                      (only with data-items-to-show)
  *
  * Input:
  *   barely:carouselnav  -> { dir } steps, { index } goes to index
@@ -174,6 +174,11 @@ const pageOf = (root, index) => {
 const pageTotal = (root) =>
 	Math.ceil((root._barelyGeometry?.items.length ?? 0) / perPage(root));
 
+// Pages exist whenever the author opts into pagination with
+// data-items-to-show - even "1". Without the attribute, data-page would just
+// be data-index + 1, so it is dropped.
+const hasPages = (root) => root.hasAttribute('data-items-to-show');
+
 // Project the current index onto the DOM as data-active, data-can-prev/next,
 // and data-page/data-total. data-index is the source of truth.
 const publish = (root, index) => {
@@ -204,8 +209,8 @@ const publish = (root, index) => {
 	const next = {
 		canPrev: index > 0,
 		canNext: index < lastIndexOf(root),
-		page: pageOf(root, index),
-		total: pageTotal(root),
+		page: hasPages(root) ? pageOf(root, index) : null,
+		total: hasPages(root) ? pageTotal(root) : null,
 	};
 
 	const prev = root._barelyPublished;
@@ -235,8 +240,8 @@ const announce = (root, index) => {
 // Fire off event + payload when index changes on settle
 const emitSettled = (root, index) => {
 	const geo = root._barelyGeometry;
-	const total = pageTotal(root);
-	const page = pageOf(root, index);
+	const page = hasPages(root) ? pageOf(root, index) : null;
+	const total = hasPages(root) ? pageTotal(root) : null;
 
 	if (root._barelyEmittedIndex !== index) {
 		root._barelyEmittedIndex = index;
@@ -249,7 +254,7 @@ const emitSettled = (root, index) => {
 		});
 	}
 
-	if (root._barelyEmittedPage !== page) {
+	if (hasPages(root) && root._barelyEmittedPage !== page) {
 		root._barelyEmittedPage = page;
 		emit(root, 'barely:pagechange', { page, total });
 	}
@@ -372,7 +377,9 @@ Carousel.onMount((root) => {
 
 	// Mount doesn't count as a change so don't fire the change event
 	root._barelyEmittedIndex = indexOf(root);
-	root._barelyEmittedPage = pageOf(root, indexOf(root));
+	root._barelyEmittedPage = hasPages(root)
+		? pageOf(root, indexOf(root))
+		: null;
 	setNavDisabled(root);
 
 	whenSettled(track, () => settle(root));

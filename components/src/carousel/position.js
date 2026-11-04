@@ -11,6 +11,12 @@ import { clamp, nearestIndex, targetFor } from '@justbarely/core';
 export const createPosition = (geo, align) => {
 	const state = { destination: null, reported: null, lastPos: null };
 
+	// Where `index` would come to rest: its alignment clamped to the range.
+	const restPosition = (index) => {
+		const target = targetFor(geo.items, index, geo.axis.size(), align);
+		return target == null ? null : clamp(target, 0, geo.axis.max());
+	};
+
 	return {
 		// Is an intent currently taking us somewhere?
 		travelling: () => state.destination != null,
@@ -28,12 +34,11 @@ export const createPosition = (geo, align) => {
 		// items share the end position, so keep the chosen one if it's already
 		// there.
 		chosenHere: (index) => {
-			const target = targetFor(geo.items, index, geo.axis.size(), align);
-			return (
-				target != null &&
-				Math.abs(clamp(target, 0, geo.axis.max()) - geo.axis.pos()) < 1
-			);
+			const rest = restPosition(index);
+			return rest != null && Math.abs(rest - geo.axis.pos()) < 1;
 		},
+
+		restPosition,
 
 		// Gate the settle read to only report when the track is actually settled
 		settleGate: () => {
