@@ -1,5 +1,5 @@
 /*
- * @justbarely/components - Modal structural styles
+ * @justbarely/components - Dialog structural styles
  *
  * Closed <dialog> is display:none; which can't be transitioned. Barely adds 
  * [data-open] to the dialog when it's opened, and the theme can transition
@@ -10,11 +10,11 @@
  */
 
 @layer components {
-	[data-component='modal'] dialog[open] {
+	[data-component='dialog'] dialog[open] {
 		opacity: 0;
 	}
 
-	[data-component='modal'] dialog[data-open] {
+	[data-component='dialog'] dialog[data-open] {
 		opacity: 1;
 	}
 } /* @layer components */

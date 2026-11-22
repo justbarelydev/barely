@@ -8,7 +8,7 @@
 import { Barely } from '@justbarely/engine';
 import './tabs/tabs';
 import './accordion/accordion';
-import './modal/modal';
+import './dialog/dialog';
 import './carousel/carousel';
 import './carousel/carousel-nav';
 import './tooltip/tooltip';

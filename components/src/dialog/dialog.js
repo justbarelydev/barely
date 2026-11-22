@@ -1,36 +1,36 @@
 /**
- * @justbarely/components - Modal
- *
- * Native <dialog> - the browser handles backdrop, Esc, focus trap, and ARIA.
- * Barely adds [data-open] for CSS transitions and overlay click-to-close.
+ * Dialog - native `<dialog>` with transition hooks.
  *
  *   <button data-trigger="newsletter">Subscribe</button>
  *   <dialog data-target="newsletter">
  *     <h2>Stay in touch</h2>
+ *     <button data-close aria-label="Close">×</button>
  *     <form method="dialog">
  *       <button value="cancel">No thanks</button>
  *       <button value="yes">Subscribe</button>
  *     </form>
  *   </dialog>
  *
- * Events:
- *   barely:beforechange -> { open, dialog }
- *   barely:afterchange  -> { open, dialog }
+ * Browser owns the backdrop, Esc, the focus trap and the top layer, and close
+ * backdrop click. Barely adds a [data-open] attribute for CSS transitions,
+ * and closes with any [data-close] element.
  */
 
 import '../base.css';
-import './modal.css';
+import './dialog.css';
 
 import {
 	Barely,
 	listen,
 	emit,
 	els,
+	ensureAttr,
+	linkAria,
 	setAttrs,
 	waitForAnimation,
 } from '@justbarely/engine';
 
-const Modal = Barely.register('modal');
+const Dialog = Barely.register('dialog');
 
 const show = (root, dialog) => {
 	if (dialog.open) return;
@@ -58,13 +58,31 @@ const hide = (root, dialog) => {
 	waitForAnimation(dialog, () => dialog.close());
 };
 
-Modal.onMount((root) => {
+Dialog.onMount((root) => {
 	els(root, 'dialog[data-target]').forEach((dialog) => {
 		// Intercept Esc press before the browser closes the dialog
 		dialog.addEventListener('cancel', (e) => {
 			e.preventDefault();
 			hide(root, dialog);
 		});
+
+		// [data-close] buttons close the dialog themselves. preventDefault stops
+		// <form>s from submitting (a cancel button never validates)
+		listen(
+			dialog,
+			'click',
+			(e, button) => {
+				// A nested dialog owns its own close buttons
+				const owner = button.closest('dialog[data-target]');
+				if (owner && owner !== dialog) return;
+
+				e.preventDefault();
+				if (button.hasAttribute('value'))
+					dialog.returnValue = button.getAttribute('value');
+				hide(root, dialog);
+			},
+			'[data-close]',
+		);
 
 		// Intercept form submit (method="dialog") before the native close
 		const form = dialog.querySelector('form[method="dialog"]');
@@ -86,7 +104,17 @@ Modal.onMount((root) => {
 		'dialog[data-target]',
 	);
 
-	// Triggers
+	// linkAria names the dialog based on its trigger
+	els(root, '[data-trigger]').forEach((trigger) => {
+		const key = trigger.dataset.trigger;
+		const dialog = els(root, `[data-target="${key}"]`).find(
+			(el) => el.tagName === 'DIALOG',
+		);
+		if (!dialog) return;
+		ensureAttr(trigger, 'aria-haspopup', 'dialog');
+		linkAria(trigger, dialog, { prefix: 'dialog' });
+	});
+
 	listen(
 		root,
 		'click',
