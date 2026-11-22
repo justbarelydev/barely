@@ -38,7 +38,6 @@
 import '../base.css';
 import './tabs.css';
 
-import { wrap } from '@justbarely/core';
 import {
 	Barely,
 	listen,
@@ -46,8 +45,9 @@ import {
 	els,
 	setAttrs,
 	hasMode,
-	ensureId,
-	uid,
+	linkTriggers,
+	rovingTabindex,
+	bindKeynav,
 } from '@justbarely/engine';
 
 const Tabs = Barely.register('tabs', { watch: ['data-active'] });
@@ -62,37 +62,23 @@ const syncAria = (root) => {
 	// Drop it from the root if a strip appeared later
 	if (strip) setAttrs(root, { role: false, 'aria-orientation': null });
 
-	const panels = els(root, '[data-target]');
-	const triggers = els(root, '[data-trigger]');
+	// ids and aria-controls/aria-labelledby for each set of trigger/target
+	const { triggers, targets: panels } = linkTriggers(root, {
+		prefix: 'tabs',
+	});
 
-	// One id per instance
-	const base = ensureId(root, () => uid('tabs'));
-
-	// Ids first: the wiring below reads them back
-	panels.forEach((el) =>
-		setAttrs(el, {
-			role: 'tabpanel',
-			id: ensureId(el, () => `${base}-panel-${el.dataset.target}`),
-		}),
-	);
+	panels.forEach((el) => setAttrs(el, { role: 'tabpanel' }));
 	triggers.forEach((el) =>
 		setAttrs(el, {
 			role: 'tab',
-			id: ensureId(el, () => `${base}-tab-${el.dataset.trigger}`),
+			'aria-selected': el.hasAttribute('data-active'),
 		}),
 	);
 
-	triggers.forEach((el) => {
-		const panel = panels.find(
-			(p) => p.dataset.target === el.dataset.trigger,
-		);
-		setAttrs(el, {
-			'aria-selected': el.hasAttribute('data-active'),
-			'aria-controls': panel ? panel.id : null,
-			tabindex: el.hasAttribute('data-active') ? '0' : '-1',
-		});
-		if (panel) setAttrs(panel, { 'aria-labelledby': el.id });
-	});
+	rovingTabindex(
+		triggers,
+		triggers.findIndex((el) => el.hasAttribute('data-active')),
+	);
 };
 
 // Sync children and ARIA from the root value
@@ -135,51 +121,13 @@ Tabs.onChange('data-active', (root, key, previous) => {
 	});
 });
 
-// Keyboard: arrows rove, Home/End jump, Enter/Space activate
-const onKeydown = (e, tab, root) => {
-	const tabs = els(root, '[data-trigger]');
-	const i = tabs.indexOf(tab);
-	if (i === -1) return;
-
-	// Chords belong to the browser and OS (Alt+Left is Back on Windows/Linux)
-	if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-	const vertical = hasMode(root, 'vertical');
-	const nextKey = vertical ? 'ArrowDown' : 'ArrowRight';
-	const prevKey = vertical ? 'ArrowUp' : 'ArrowLeft';
-
-	let next;
-	switch (e.key) {
-		case nextKey:
-			next = wrap(i + 1, tabs.length);
-			break;
-		case prevKey:
-			next = wrap(i - 1, tabs.length);
-			break;
-		case 'Home':
-			next = 0;
-			break;
-		case 'End':
-			next = tabs.length - 1;
-			break;
-		case 'Enter':
-		case ' ':
-			e.preventDefault();
-			activate(root, tab.dataset.trigger);
-			return;
-		default:
-			return;
-	}
-
-	e.preventDefault();
-	tabs[next].focus();
-	activate(root, tabs[next].dataset.trigger);
-};
-
 Tabs.onMount((root) => {
+	// Failure is invisible otherwise. With no strip, the tablist ends up on the
+	// root and the panels end up inside it, which only shows up in the a11y tree.
 	if (!els(root, '[data-triggers]').length)
 		console.warn(
 			'[barely] tabs: no [data-triggers] container. The panels end up inside the tablist; wrap the triggers.',
+			'[barely] tabs: no [data-triggers] container. For propery a11y, wrap the triggers in an element with [data-triggers]',
 			root,
 		);
 
@@ -203,5 +151,16 @@ Tabs.onMount((root) => {
 		'[data-trigger]',
 	);
 
-	listen(root, 'keydown', onKeydown, '[data-trigger]');
+	// keyboard nav
+	bindKeynav(root, {
+		items: '[data-trigger]',
+		delegate: '[data-trigger]',
+		orientation: hasMode(root, 'vertical') ? 'vertical' : 'horizontal',
+		active: () =>
+			els(root, '[data-trigger]').findIndex((el) =>
+				el.hasAttribute('data-active'),
+			),
+		activate: (i, trigger) => activate(root, trigger.dataset.trigger),
+		activateOnArrow: true,
+	});
 });

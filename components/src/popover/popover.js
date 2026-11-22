@@ -50,6 +50,9 @@ import './popover.css';
 import {
 	Barely,
 	ensureAttr,
+	ensureId,
+	linkAria,
+	uid,
 	floatCoords,
 	hasMode,
 	setAttrs,
@@ -66,8 +69,6 @@ const Popover = Barely.register('popover', {
 // Add px to refracted vars if no unit is provided
 Popover.onRefract('data-offset-x', unitize('px'));
 Popover.onRefract('data-offset-y', unitize('px'));
-
-let popoverId = 0;
 
 const isOpen = (target) => target.hasAttribute('data-open');
 
@@ -148,12 +149,8 @@ const show = (root) => {
 	target._barelyOwns = owns;
 	root._barelyTarget = target;
 
-	// ARIA: link trigger to content
-	const contentId = root._barelyContentId;
-	ensureAttr(target, 'id', contentId);
-	root.setAttribute('aria-controls', contentId);
-
-	// ARIA: dialog label - copy from trigger if the target doesn't have one
+	// If the trigger doesn't have a dialog label, copy it from the trigger.
+	// Don't overwrite existing labels.
 	if (
 		!target.hasAttribute('aria-label') &&
 		!target.hasAttribute('aria-labelledby')
@@ -161,6 +158,10 @@ const show = (root) => {
 		const label = root.getAttribute('aria-label') || root._barelyTitle;
 		if (label) ensureAttr(target, 'aria-label', label);
 	}
+
+	// Trigger controls the content and content is named by the trigger when
+	// it doesn't have it's own name.
+	linkAria(root, target, { prefix: 'popover' });
 
 	// Close button - listen once
 	if (!target._barelyHasClose) {
@@ -266,12 +267,10 @@ Popover.onMount((root) => {
 		root._barelyTitle = title;
 	}
 
-	// ARIA: popover content id
-	const triggerId =
-		root.getAttribute('id') || `popover-trigger-${popoverId++}`;
-	setAttrs(root, { id: triggerId, 'aria-expanded': false });
+	// The root is the trigger and its ID names the content
+	ensureId(root, () => uid('popover'));
+	setAttrs(root, { 'aria-expanded': false });
 	ensureAttr(root, 'aria-haspopup', 'dialog');
-	root._barelyContentId = `${triggerId}-content`;
 
 	// Toggle on click
 	listen(root, 'click', () => {

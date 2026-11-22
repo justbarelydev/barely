@@ -38,6 +38,7 @@ import {
 	el,
 	setAttrs,
 	ensureAttr,
+	describeAria,
 	unitize,
 	placeTarget,
 } from '@justbarely/engine';
@@ -55,8 +56,6 @@ Tooltip.onRefract('data-offset-x', unitize('px'));
 Tooltip.onRefract('data-offset-y', unitize('px'));
 Tooltip.onRefract('data-show-delay', unitize('ms'));
 Tooltip.onRefract('data-hide-delay', unitize('ms'));
-
-let tooltipId = 0;
 
 Tooltip.onMount((root) => {
 	// Strip native title to prevent the default browser tooltip
@@ -82,10 +81,10 @@ Tooltip.onMount((root) => {
 		root.appendChild(tooltip);
 	}
 
-	// ARIA
-	const id = tooltip.getAttribute('id') || `tooltip-${tooltipId++}`;
-	setAttrs(tooltip, { id });
-	ensureAttr(trigger, 'aria-describedby', id);
+	// Tooltip describes the trigger
+	// Authored [data-target] markup needs the role too, not just generated ones.
+	ensureAttr(tooltip, 'role', 'tooltip');
+	describeAria(trigger, tooltip, { prefix: 'tooltip' });
 
 	const show = () => {
 		placeTarget(root, trigger, tooltip, root.dataset.placement ?? 'top');
@@ -97,4 +96,10 @@ Tooltip.onMount((root) => {
 	listen(trigger, ['mouseenter', 'focus'], show);
 	listen(trigger, ['mouseleave', 'blur'], hide);
 	listen(window, 'scroll', hide);
+
+	// Dismissible. On the document because the tooltip can be opened via hover
+	// while focus is somewhere else.
+	listen(document, 'keydown', (e) => {
+		if (e.key === 'Escape' && tooltip.hasAttribute('data-open')) hide();
+	});
 });
