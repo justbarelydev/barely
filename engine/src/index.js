@@ -19,6 +19,7 @@ export const Barely = {
 
 // Helpers
 export * from './helpers/attr';
+export * from './helpers/aria';
 export * from './helpers/cleanup';
 export * from './helpers/elements';
 export * from './helpers/emit';
