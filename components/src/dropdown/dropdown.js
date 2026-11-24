@@ -33,7 +33,7 @@ import {
 	bindKeynav,
 } from '@justbarely/engine';
 
-const Dropdown = Barely.register('dropdown', {
+export const Dropdown = Barely.register('dropdown', {
 	refract: ['data-offset-x', 'data-offset-y'],
 });
 

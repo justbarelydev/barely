@@ -43,7 +43,7 @@ import {
 	placeTarget,
 } from '@justbarely/engine';
 
-const Tooltip = Barely.register('tooltip', {
+export const Tooltip = Barely.register('tooltip', {
 	refract: [
 		'data-offset-x',
 		'data-offset-y',

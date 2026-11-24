@@ -47,7 +47,7 @@ import {
 	setNavDisabled,
 } from './carousel-controls';
 
-const CarouselNav = Barely.register('carousel-nav', {
+export const CarouselNav = Barely.register('carousel-nav', {
 	watch: ['data-current', 'data-can-prev', 'data-can-next'],
 });
 

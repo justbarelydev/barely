@@ -50,7 +50,7 @@ import {
 	bindKeynav,
 } from '@justbarely/engine';
 
-const Tabs = Barely.register('tabs', { watch: ['data-active'] });
+export const Tabs = Barely.register('tabs', { watch: ['data-active'] });
 
 // Auto-inject a11y on mount/change
 const syncAria = (root) => {

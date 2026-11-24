@@ -70,7 +70,7 @@ import {
 import { createPosition } from './position';
 import { createPresenter } from './presenter';
 
-const Carousel = Barely.register('carousel', {
+export const Carousel = Barely.register('carousel', {
 	refract: ['data-current', 'data-items-to-show', 'data-items-to-scroll'],
 	watch: ['data-can-prev', 'data-can-next'],
 	watchChildren: '[data-track]',

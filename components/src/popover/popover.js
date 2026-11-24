@@ -62,7 +62,7 @@ import {
 	waitForAnimation,
 } from '@justbarely/engine';
 
-const Popover = Barely.register('popover', {
+export const Popover = Barely.register('popover', {
 	refract: ['data-offset-x', 'data-offset-y'],
 });
 

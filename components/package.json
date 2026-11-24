@@ -32,7 +32,8 @@
 		".": {
 			"import": "./dist/index.esm.js",
 			"default": "./dist/index.esm.js"
-		}
+		},
+		"./index.css": "./dist/index.css"
 	},
 	"scripts": {
 		"build": "npm run build:iife && npm run build:esm",

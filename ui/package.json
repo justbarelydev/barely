@@ -25,7 +25,8 @@
 		".": {
 			"import": "./dist/index.esm.js",
 			"default": "./dist/index.esm.js"
-		}
+		},
+		"./index.css": "./dist/index.css"
 	},
 	"dependencies": {
 		"@justbarely/core": "^0.3.0",

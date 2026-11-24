@@ -30,7 +30,7 @@ import {
 	waitForAnimation,
 } from '@justbarely/engine';
 
-const Dialog = Barely.register('dialog');
+export const Dialog = Barely.register('dialog');
 
 const show = (root, dialog) => {
 	if (dialog.open) return;

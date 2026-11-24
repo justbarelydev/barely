@@ -61,7 +61,7 @@ import {
 	linkTriggers,
 } from '@justbarely/engine';
 
-const Accordion = Barely.register('accordion');
+export const Accordion = Barely.register('accordion');
 
 // Container width minus the triggers, padding and column gaps
 const measurePanelWidth = (root) => {
