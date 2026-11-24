@@ -243,12 +243,41 @@ function isVersionTagged(p) {
 	return listTags(p.pkg.name).includes(`${p.pkg.name}@${p.pkg.version}`);
 }
 
+/**
+ * Dependencies first. A dependent's range is rewritten when its dependency bumps,
+ * and that rewrite has to land inside the dependent's own bump commit - otherwise
+ * the dependent is tagged with a range pointing at a version that was never
+ * published.
+ */
+function inDependencyOrder(pkgs) {
+	const out = [];
+	const seen = new Set();
+	while (out.length < pkgs.length) {
+		const next = pkgs.find((p) => {
+			if (seen.has(p.pkg.name)) return false;
+			const deps = Object.keys(p.pkg.dependencies ?? {}).filter((d) =>
+				pkgs.some((x) => x.pkg.name === d),
+			);
+			return deps.every((d) => seen.has(d));
+		});
+		// A cycle (none today) falls back to input order rather than hanging.
+		if (!next) return [...out, ...pkgs.filter((p) => !seen.has(p.pkg.name))];
+		out.push(next);
+		seen.add(next.pkg.name);
+	}
+	return out;
+}
+
 function isChanged(p) {
-	// Uncommitted work in the dir, or a package.json version with no matching
-	// tag (a version bump that was committed but never tagged). Historical
-	// untagged commits don't count - if the current version is tagged, there's
-	// nothing pending.
-	return hasUncommitted(p) || !isVersionTagged(p);
+	// Uncommitted work in the dir, a version with no matching tag (a bump that
+	// was committed but never tagged), or commits made *after* the tag. The last
+	// one is the ordinary case - work lands, then the version is bumped for it -
+	// and without it a tagged package with newer commits looks finished.
+	return (
+		hasUncommitted(p) ||
+		!isVersionTagged(p) ||
+		commitsSince(p.pkg.name, p.dir).length > 0
+	);
 }
 
 /**
@@ -302,6 +331,7 @@ async function main() {
 			),
 		);
 	}
+	candidates = inDependencyOrder(candidates);
 	if (filter.length) {
 		candidates = candidates.filter((p) =>
 			filter.some(
@@ -340,45 +370,51 @@ async function main() {
 		console.log(bold(`=== ${p.pkg.name} ===`));
 		console.log(`  version: ${p.pkg.version}`);
 
-		if (!uncommitted) {
-			// Work is already committed but untagged - just offer to tag HEAD.
-			const tagName = `${p.pkg.name}@${p.pkg.version}`;
-			if (listTags(p.pkg.name).includes(tagName)) {
-				const n = commits.length;
-				console.log(
-					yellow(
-						`  already tagged ${tagName}${n ? ` - ${n} commit(s) untagged since last release` : ''} - nothing to do`,
-					),
-				);
-				continue;
-			}
+		const currentTag = `${p.pkg.name}@${p.pkg.version}`;
+		const tagged = listTags(p.pkg.name).includes(currentTag);
+
+		// Committed, tagged, nothing newer: genuinely done.
+		if (!uncommitted && tagged && !commits.length) {
+			console.log(yellow(`  already tagged ${currentTag} - nothing to do`));
+			continue;
+		}
+
+		// Committed with no tag for this version - offer to tag HEAD as-is.
+		if (!uncommitted && !tagged) {
 			console.log(
 				`  ${commits.length} commit(s) since ${dim(lastTag || 'the beginning')}:`,
 			);
 			for (const c of commits.slice(0, 5)) console.log(`    ${dim(c)}`);
 			const ans = await ask(
-				`  tag HEAD as ${bold(tagName)}? ${dim('[y/N]')}: `,
+				`  tag HEAD as ${bold(currentTag)}? ${dim('[y/N]')}: `,
 			);
 			if (/^y/i.test(ans)) {
-				git(['tag', tagName]);
+				git(['tag', currentTag]);
 				published.push({
 					p,
 					newVersion: p.pkg.version,
 					hash: 'HEAD',
-					tag: tagName,
+					tag: currentTag,
 				});
-				console.log(`  ${green(`✓ tagged ${tagName}`)}`);
+				console.log(`  ${green(`✓ tagged ${currentTag}`)}`);
 			} else {
 				console.log('  skipped');
 			}
 			continue;
 		}
 
-		// Full flow - uncommitted work in the package dir.
+		// A bump is needed: uncommitted work, or commits that landed after this
+		// version was tagged (the normal case - work lands, then gets a version).
+		if (tagged)
+			console.log(
+				yellow(
+					`  ${currentTag} is tagged, but ${commits.length} commit(s) landed since - bumping`,
+				),
+			);
 		const files = gitStatus(p.dir)
 			.map((s) => s.slice(3))
 			.filter(Boolean);
-		console.log(`  changed: ${files.join(', ')}`);
+		if (files.length) console.log(`  changed: ${files.join(', ')}`);
 		if (commits.length) {
 			console.log(
 				`  + ${commits.length} commit(s) since ${dim(lastTag || 'the beginning')}`,
