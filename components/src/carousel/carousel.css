@@ -1,10 +1,9 @@
 /*
  * @justbarely/components - Carousel structural styles
- * 
- * /!\ Important: If you want to change the gap do it by updating the --gap var.
- * You can update the var wherever/however you want, but that var is structural
- * for [data-items-to-show]
- * 
+ *
+ * When you use [items-to-show], change the gap with `--gap` (inline or in CSS),
+ * as long as it's on the root, the track, or anywhere in-between. Barely uses
+ * CSS to calculate `--item-size` using --gap and --items-to-show.
  */
 
 @layer components {
@@ -55,28 +54,46 @@
 		min-height: 0;
 	}
 
-	/* Vertical mode */
+	/*
+	 * Vertical mode needs a height. The column layout hands it to the track so
+	 * [data-items-to-show] can split it up.
+	 */
+	[data-component='carousel'][data-mode~='vertical'] {
+		display: flex;
+		flex-direction: column;
+		align-items: start;
+		/* without this a grid or flex parent can't shrink the carousel height
+		below its content height */
+		min-block-size: 0;
+	}
+
 	[data-component='carousel'][data-mode~='vertical'] [data-track] {
+		align-self: stretch;
+		flex: 1 1 auto;
+		min-block-size: 0;
 		flex-direction: column;
 		align-items: stretch;
 		overflow-x: hidden;
 		overflow-y: auto;
-		overscroll-behavior: auto;
+		/* block-axis overscroll stays auto so the page scrolls on at the end */
 		scroll-snap-type: y mandatory;
 	}
 
-	/*
-	 * Disabled nav controls stay visible and focusable - a control that
-	 * disappears at a boundary is worse than a dim one. Override opacity in a
-	 * theme layer for a different look.
-	 */
+	/* Media shouldn't grow taller than its slide. */
+	[data-component='carousel'][data-mode~='vertical']
+		[data-track]
+		:is(img, picture, video, canvas, svg) {
+		max-block-size: 100%;
+	}
+
+	/* Show inactive nav elements as disabled by default (instead of hiding) */
 	[data-component='carousel'] [data-nav][aria-disabled='true'],
 	[data-component='carousel-nav'] [data-nav][aria-disabled='true'] {
 		opacity: 0.4;
 	}
 
-	/* Screen-reader-only live region for page announcements */
-	[data-component='carousel'] [aria-live] {
+	/* The carousel's own announcements region, made screen-reader-only. */
+	[data-component='carousel'] [data-live] {
 		position: absolute;
 		width: 1px;
 		height: 1px;

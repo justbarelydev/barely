@@ -22,6 +22,16 @@
 		display: none;
 	}
 
+	/* Vertical track scrolls on the block axis */
+	[data-component='carousel-nav'][data-mode~='scroll'][data-mode~='vertical'] {
+		flex-direction: column;
+		max-width: none;
+		max-height: 100%;
+		overflow-x: visible;
+		overflow-y: auto;
+		scroll-snap-type: y proximity;
+	}
+
 	[data-component='carousel-nav'][data-mode~='scroll'] > [data-nav] {
 		flex: 0 0 auto;
 		scroll-snap-align: center;

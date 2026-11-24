@@ -1,63 +1,47 @@
 /**
- * @justbarely/components - Carousel
- *
- * At its base this is a smart scrolling container with a current item, event
- * emitters, keyboard navigation, and a11y injection (if it's not already there).
- * You can add controls with [data-nav] wherever you want inside the component or
- * you can use [data-component="carousel-nav"] if you want to control a carousel
- * from a different part of the page.
+ * Carousel - a smart scroll container with a current item.
  *
  *   <div data-component="carousel" data-items-to-show="3" data-mode="center">
  *     <div data-track>
- *       <button>Slide 1</button>
- *       <button>Slide 2</button>
+ *       <div>Slide 1</div>
+ *       <div>Slide 2</div>
  *     </div>
  *     <button data-nav="prev">←</button>
  *     <button data-nav="next">→</button>
  *   </div>
  *
- * Behavior:
- *   [data-items-to-show]   - items visible at once (default: 1)
- *   [data-items-to-scroll] - items per arrow press (default: items-to-show if present, or 1)
- *   [data-mode="center"]   - align the active item to the center
- *   [data-mode="vertical"] - scroll on the block axis (size the track yourself)
- *   [data-mode="index"]    - stacked items, no scroll
+ * `data-index` on the root is the source of truth: set it and the carousel follows,
+ * regardless of who set it. Everything else on the root is derived from it.
+ *
+ * Config:
+ *   data-items-to-show    - items visible at once (default 1; fractional is
+ *                           scroll-drive only - the index drive floors it)
+ *   data-items-to-scroll  - items per arrow press (default items-to-show, or 1)
+ *   data-mode="center"    - align the active item to the center
+ *   data-mode="vertical"  - scroll the block axis (needs a block-size somewhere)
+ *   data-mode="index"     - stacked items, no scroll; CSS shows the current page
  *
  * Controls:
- *   [data-index]   - source of truth for carousel position - you can update this
- * 					  attribute from anywhere and it will update
- *   [data-nav]     - nested 'prev'/'next'/<number> buttons move this carousel
- *   <carousel-nav> - Separate component for external controls (prev/next/dots)
- * 					  that set index from anywhere else on the page
+ *   [data-nav]            - nested prev/next/number buttons inside the carousel
+ *   [data-component="carousel-nav"] - separate component for controls anywhere
+ *                           else on the page, driven by data-for
+ *   data-sync             - one-way follow (mirror another carousel's index)
  *
- * State:
- *   data-index     - current item, 0-based
- *   data-active    - current active item
- *   data-can-prev  - there are items behind, you can go backward
- *   data-can-next  - there are items ahead, you can go forward
- *   data-page      - current page, 1-based (only with data-items-to-show)
- *   data-total     - total page count (only with data-items-to-show)
+ * State - published by the component, never authored except data-index:
+ *   data-index     - current item, 0-based (also the input)
+ *   data-active    - marker on the current slide
+ *   data-can-prev  - there is something behind
+ *   data-can-next  - there is something ahead
+ *   data-page      - current page, 1-based   (only with data-items-to-show)
+ *   data-total     - page count              (only with data-items-to-show)
  *
  * Events:
- *   barely:beforechange -> { index, child, track }              (intent accepted)
- *   barely:afterchange  -> { index, page, total, child, track } (settled)
- *   barely:pagechange   -> { page, total }                      (only with data-items-to-show)
+ *   barely:beforechange -> { index, child, track }               intent accepted
+ *   barely:afterchange  -> { index, page, total, child, track }  settled
+ *   barely:pagechange   -> { page, total }                       only with pages
  *
  * Input:
- *   barely:carouselnav  -> { dir } steps, { index } goes to index
- *
- * Notes:
- * - `--gap` is the track's gap (read only by CSS) and needed to properly calculate
- *     item widths
- * - If you want to control multiple carousels you can just query them, loop over
- *   them, and set their data-index. carousel-nav does this for you, but only on
- *   the first carousel matching the given selector
- *
- * Important :
- *   measure()  items as intervals on an axis (horiztonal or vertical, direction)
- *   move()     fires on intent: keyboard, [data-nav], <carouselnav>, data-index change
- *   settle()   scrolling has settled, update state
- *   publish()  update state based on index
+ *   barely:carouselnav  -> { dir } steps, { index } goes to that index
  */
 
 import '../base.css';
@@ -71,6 +55,7 @@ import {
 	els,
 	setAttrs,
 	hasMode,
+	ensureAttr,
 	scrollAxis,
 	whenSettled,
 } from '@justbarely/engine';
@@ -84,7 +69,7 @@ import {
 import { createPosition } from './position';
 import { createPresenter } from './presenter';
 
-export const Carousel = Barely.register('carousel', {
+const Carousel = Barely.register('carousel', {
 	refract: ['data-index', 'data-items-to-show', 'data-items-to-scroll'],
 	watch: ['data-can-prev', 'data-can-next'],
 	watchChildren: '[data-track]',
@@ -121,15 +106,58 @@ const measure = (root) => {
 		size: geo.axis.sizeOf(el),
 	}));
 
-	// [data-mode="index"] stacks carousel items. it also handles [data-items-to-show]
-	// with `grid-column` so you can stack sets
+	// A vertical carousel gets no height from layout: with none the track is as
+	// tall as its slides, so it can't scroll and the controls are dead. Nothing
+	// errors, so say it once (after a frame, in case a stylesheet loads late).
+	if (
+		hasMode(root, 'vertical') &&
+		!hasMode(root, 'index') &&
+		geo.track.childElementCount > perPage(root) &&
+		geo.axis.max() === 0 &&
+		!root._barelyHeightWarned
+	)
+		requestAnimationFrame(() => {
+			if (root._barelyHeightWarned || geo.axis.max() > 0) return;
+			root._barelyHeightWarned = true;
+			console.warn(
+				'[barely] carousel: a vertical carousel needs a height - on the carousel, on its [data-track], or stretched onto it by a flex or grid parent. A parent height alone does nothing: a block child stays content-tall. Without one the track is as tall as its slides and nothing scrolls.',
+				root,
+			);
+		});
+
+	// index mode stacks the items, one grid column per slot in the page
 	if (hasMode(root, 'index')) {
 		const per = perPage(root);
 		[...geo.track.children].forEach((slide, i) => {
 			slide.style.gridColumn = String((i % per) + 1);
 		});
 	}
+
 	return true;
+};
+
+// These already announce a role worth keeping - a slide role would replace it.
+const SLIDE_SKIP = new Set([
+	'IMG',
+	'VIDEO',
+	'SVG',
+	'INPUT',
+	'BUTTON',
+	'SELECT',
+	'TEXTAREA',
+	'A',
+]);
+
+// A slide is a group announced as "slide". Naming it is your job <3.
+const markSlides = (root) => {
+	const track = root._barelyGeometry?.track;
+	if (!track) return;
+
+	for (const slide of track.children) {
+		if (SLIDE_SKIP.has(slide.tagName)) continue;
+		ensureAttr(slide, 'role', 'group');
+		ensureAttr(slide, 'aria-roledescription', 'slide');
+	}
 };
 
 // re-measure if any children change size (lazy loading, images, etc)
@@ -179,8 +207,7 @@ const pageTotal = (root) =>
 // be data-index + 1, so it is dropped.
 const hasPages = (root) => root.hasAttribute('data-items-to-show');
 
-// Project the current index onto the DOM as data-active, data-can-prev/next,
-// and data-page/data-total. data-index is the source of truth.
+// Project the index onto the DOM: data-active, can-prev/next, page, total.
 const publish = (root, index) => {
 	const geo = root._barelyGeometry;
 	if (!geo?.items.length) return;
@@ -276,7 +303,6 @@ const move = (root, intent) => {
 		lastIndexOf(root),
 	);
 
-	// Skip if there's nowhere to go
 	if (next === from) return;
 
 	emit(root, 'barely:beforechange', {
@@ -343,8 +369,8 @@ Carousel.onMount((root) => {
 		items: [],
 	};
 	root._barelyPosition = createPosition(root._barelyGeometry, alignOf(root));
-	// The presenter decides how data-index moves (native scroll or index mode's
-	// no-scroll). More coming later (like transform/rAF)
+	// The presenter decides how the index moves: native scroll, or index mode's
+	// no-scroll.
 	root._barelyPresenter = createPresenter(root, root._barelyPosition);
 
 	if (!root.hasAttribute('role'))
@@ -352,15 +378,18 @@ Carousel.onMount((root) => {
 	if (!root.hasAttribute('aria-roledescription'))
 		root.setAttribute('aria-roledescription', 'carousel');
 
-	// One live region per carousel (reused across re-mounts so we don't stack
-	// them).
-	let live = root.querySelector(':scope > [aria-live]');
+	// One live region per carousel, marked [data-live] so re-mounts find it again
+	// and an aria-live inside a slide is never mistaken for it.
+	let live = root.querySelector('[data-live]');
 	if (!live) {
 		live = document.createElement('div');
-		live.setAttribute('aria-live', 'polite');
-		live.setAttribute('aria-atomic', 'true');
+		live.setAttribute('data-live', '');
 		root.appendChild(live);
 	}
+	if (!live.hasAttribute('aria-live'))
+		live.setAttribute('aria-live', 'polite');
+	if (!live.hasAttribute('aria-atomic'))
+		live.setAttribute('aria-atomic', 'true');
 	root._barelyLive = live;
 
 	// The scroll container is the tab stop, so keyboard scrolling is reachable
@@ -370,6 +399,7 @@ Carousel.onMount((root) => {
 	nameNavControls(root);
 	setNavDisabled(root);
 	setNavCurrent(root, indexOf(root));
+	markSlides(root);
 
 	root._barelyPending = indexOf(root);
 	applyPending(root);
@@ -472,6 +502,7 @@ Carousel.onChange('data-can-prev', setNavDisabled);
 Carousel.onChange('data-can-next', setNavDisabled);
 
 Carousel.onChildUpdate((root) => {
+	markSlides(root);
 	if (!measure(root)) return;
 	observeItems(root);
 	settle(root);

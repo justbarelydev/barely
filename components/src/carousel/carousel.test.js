@@ -107,6 +107,7 @@ const makeCarousel = (
 
 const navButton = (root, name) => root.querySelector(`[data-nav="${name}"]`);
 const scrollTrack = (track) => track.dispatchEvent(new Event('scroll'));
+const frame = () => new Promise((r) => requestAnimationFrame(r));
 
 afterEach(() => {
 	document.body.replaceChildren();
@@ -506,6 +507,69 @@ describe('carousel axis', () => {
 	});
 });
 
+describe('carousel vertical sizing', () => {
+	afterEach(() => vi.restoreAllMocks());
+
+	it('warns when a vertical carousel has no room to scroll', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		// 5 slides x 20 in a 100 cell: the track fits exactly, so nothing scrolls.
+		makeCarousel('v-no-size', {
+			mode: 'vertical',
+			slides: 5,
+			size: 20,
+			viewport: 100,
+		});
+		await frame();
+
+		expect(
+			warn.mock.calls.some(([msg]) => String(msg).includes('vertical carousel needs a height')),
+		).toBe(true);
+	});
+
+	it('stays quiet when the vertical carousel can scroll', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		makeCarousel('v-sized', { mode: 'vertical' });
+		await frame();
+
+		expect(
+			warn.mock.calls.some(([msg]) => String(msg).includes('vertical carousel needs a height')),
+		).toBe(false);
+	});
+
+	it('stays quiet in index mode, which never scrolls', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		makeCarousel('v-index', {
+			mode: 'index vertical',
+			slides: 5,
+			size: 100,
+			viewport: 100,
+		});
+		await frame();
+
+		expect(
+			warn.mock.calls.some(([msg]) => String(msg).includes('vertical carousel needs a height')),
+		).toBe(false);
+	});
+
+	it('warns once per instance, not on every measure', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { root } = makeCarousel('v-once', {
+			mode: 'vertical',
+			slides: 5,
+			size: 20,
+			viewport: 100,
+		});
+		await frame();
+		initElement(root);
+		await frame();
+
+		const hits = warn.mock.calls.filter(([msg]) =>
+			String(msg).includes('vertical carousel needs a height'),
+		);
+		expect(hits).toHaveLength(1);
+	});
+});
+
 describe('carousel index drive', () => {
 	it('paints without scrolling and reports the change immediately', async () => {
 		const { root, track } = makeCarousel('index-drive', {
@@ -604,6 +668,73 @@ describe('carousel controls', () => {
 
 		expect(dots[2].getAttribute('aria-current')).toBe('true');
 		expect(dots[0].hasAttribute('aria-current')).toBe(false);
+	});
+});
+
+describe('carousel slide ARIA', () => {
+	it('gives slides a group role and a slide roledescription', () => {
+		const { root, track } = makeCarousel('slide-aria', { slides: 3 });
+		const slides = [...track.children];
+
+		expect(slides.map((s) => s.getAttribute('role'))).toEqual([
+			'group',
+			'group',
+			'group',
+		]);
+		expect(
+			slides.map((s) => s.getAttribute('aria-roledescription')),
+		).toEqual(['slide', 'slide', 'slide']);
+		expect(root.getAttribute('aria-roledescription')).toBe('carousel');
+	});
+
+	it('never invents a slide name - that is the author\'s', () => {
+		const { track } = makeCarousel('slide-name', { slides: 2 });
+		expect(track.children[0].hasAttribute('aria-label')).toBe(false);
+	});
+
+	it('keeps an authored name and an authored role', () => {
+		const { track } = makeCarousel('slide-authored', { slides: 2 });
+		track.children[0].setAttribute('aria-label', 'A red bicycle');
+		track.children[1].setAttribute('role', 'listitem');
+		initElement(track.parentElement);
+
+		expect(track.children[0].getAttribute('aria-label')).toBe(
+			'A red bicycle',
+		);
+		expect(track.children[1].getAttribute('role')).toBe('listitem');
+	});
+
+	it('marks slides that are added later', () => {
+		const { track } = makeCarousel('slide-added', { slides: 2 });
+		const added = document.createElement('div');
+		track.appendChild(added);
+		initElement(track.parentElement);
+
+		expect(added.getAttribute('role')).toBe('group');
+		expect(added.getAttribute('aria-roledescription')).toBe('slide');
+	});
+
+	it('leaves replaced elements alone so alt text survives', () => {
+		const target = document.createElement('div');
+		target.id = 'img-slides';
+		target.setAttribute('data-component', 'carousel');
+		const track = document.createElement('div');
+		track.setAttribute('data-track', '');
+		const img = document.createElement('img');
+		img.setAttribute('alt', 'A red bicycle');
+		track.appendChild(img);
+		Object.defineProperty(track, 'clientWidth', { value: 100 });
+		Object.defineProperty(track, 'scrollWidth', { value: 100 });
+		Object.defineProperty(track, 'clientHeight', { value: 100 });
+		Object.defineProperty(track, 'scrollHeight', { value: 100 });
+		track.getBoundingClientRect = () => ({ left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100 });
+		img.getBoundingClientRect = () => ({ left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100 });
+		target.appendChild(track);
+		document.body.appendChild(target);
+		initElement(target);
+
+		expect(img.hasAttribute('role')).toBe(false);
+		expect(img.getAttribute('alt')).toBe('A red bicycle');
 	});
 });
 
