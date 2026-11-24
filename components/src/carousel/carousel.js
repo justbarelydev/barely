@@ -10,8 +10,8 @@
  *     <button data-nav="next">→</button>
  *   </div>
  *
- * `data-index` on the root is the source of truth: set it and the carousel follows,
- * regardless of who set it. Everything else on the root is derived from it.
+ * `data-current` on the root is the source of truth: set it and the carousel
+ * follows, regardless of who set it. Everything else on the root is derived from it.
  *
  * Config:
  *   data-items-to-show    - items visible at once (default 1; fractional is
@@ -27,8 +27,8 @@
  *                           else on the page, driven by data-for
  *   data-sync             - one-way follow (mirror another carousel's index)
  *
- * State - published by the component, never authored except data-index:
- *   data-index     - current item, 0-based (also the input)
+ * State - published by the component, never authored except data-current:
+ *   data-current   - current item, 1-based (also the input)
  *   data-active    - marker on the current slide
  *   data-can-prev  - there is something behind
  *   data-can-next  - there is something ahead
@@ -38,6 +38,7 @@
  * Events:
  *   barely:beforechange -> { index, child, track }               intent accepted
  *   barely:afterchange  -> { index, page, total, child, track }  settled
+ *                          (index and page both count from 1)
  *   barely:pagechange   -> { page, total }                       only with pages
  *
  * Input:
@@ -70,7 +71,7 @@ import { createPosition } from './position';
 import { createPresenter } from './presenter';
 
 const Carousel = Barely.register('carousel', {
-	refract: ['data-index', 'data-items-to-show', 'data-items-to-scroll'],
+	refract: ['data-current', 'data-items-to-show', 'data-items-to-scroll'],
 	watch: ['data-can-prev', 'data-can-next'],
 	watchChildren: '[data-track]',
 });
@@ -183,12 +184,16 @@ const lastIndexOf = (root) => {
 	);
 };
 
+// While the attribute is 1-based (HTML), everything in here (JS) counts from 0
 const indexOf = (root) => {
 	const geo = root._barelyGeometry;
-	const value = Math.max(0, toInt(root.getAttribute('data-index'), 0));
+	const value = Math.max(1, toInt(root.getAttribute('data-current'), 1)) - 1;
 	const count = geo?.items.length ?? 0;
 	return count ? clamp(value, 0, count - 1) : value;
 };
+
+const setIndexOf = (root, index) =>
+	root.setAttribute('data-current', String(index + 1));
 
 const pageOf = (root, index) => {
 	const page = Math.floor(index / perPage(root)) + 1;
@@ -204,13 +209,17 @@ const pageTotal = (root) =>
 
 // Pages exist whenever the author opts into pagination with
 // data-items-to-show - even "1". Without the attribute, data-page would just
-// be data-index + 1, so it is dropped.
+// be data-current, so it is dropped.
 const hasPages = (root) => root.hasAttribute('data-items-to-show');
 
 // Project the index onto the DOM: data-active, can-prev/next, page, total.
 const publish = (root, index) => {
 	const geo = root._barelyGeometry;
 	if (!geo?.items.length) return;
+
+	// The attr is the input and the published value. Write it on the first paint
+	// so [data-current] and `--current` always exist.
+	if (!root.hasAttribute('data-current')) setIndexOf(root, index);
 
 	const child = geo.track.children[index];
 	const active = geo.track.querySelector('[data-active]');
@@ -231,7 +240,7 @@ const publish = (root, index) => {
 		});
 	}
 
-	setNavCurrent(root, index);
+	setNavCurrent(root, index + 1);
 
 	const next = {
 		canPrev: index > 0,
@@ -273,7 +282,7 @@ const emitSettled = (root, index) => {
 	if (root._barelyEmittedIndex !== index) {
 		root._barelyEmittedIndex = index;
 		emit(root, 'barely:afterchange', {
-			index,
+			index: index + 1,
 			page,
 			total,
 			child: geo.track.children[index],
@@ -287,31 +296,24 @@ const emitSettled = (root, index) => {
 	}
 };
 
-// Handle step requests (direction) from [data-nav] prev/next, arrow keys, and
-// external carouselnav {dir}. Numeric go-to and data-index updates are handled
-// by onChange
-const move = (root, intent) => {
+// Step requests from [data-nav] prev/next, arrow keys, and external
+// carouselnav. Numeric go-to writes the attribute and lands in onChange.
+const move = (root, { dir }) => {
 	const geo = root._barelyGeometry;
 	if (!geo?.items.length) return;
 
 	const from = indexOf(root);
-	const next = clamp(
-		intent.index != null
-			? toInt(intent.index, from)
-			: from + intent.dir * stepOf(root),
-		0,
-		lastIndexOf(root),
-	);
+	const next = clamp(from + dir * stepOf(root), 0, lastIndexOf(root));
 
 	if (next === from) return;
 
 	emit(root, 'barely:beforechange', {
-		index: next,
+		index: next + 1,
 		child: geo.track.children[next],
 		track: geo.track,
 	});
 
-	root.setAttribute('data-index', next);
+	setIndexOf(root, next);
 };
 
 // Ensure hidden carousels respect their set index when they become visible
@@ -320,8 +322,7 @@ const applyPending = (root) => {
 	const pending = clamp(root._barelyPending, 0, lastIndexOf(root));
 	root._barelyPending = null;
 
-	if (root.getAttribute('data-index') !== String(pending))
-		root.setAttribute('data-index', pending);
+	if (indexOf(root) !== pending) setIndexOf(root, pending);
 
 	publish(root, pending);
 	root._barelyPresenter.scrollTo(pending, 'instant');
@@ -342,7 +343,8 @@ const settle = (root) => {
 		return;
 	}
 
-	const current = toInt(root.getAttribute('data-index'), -1);
+	const attr = root.getAttribute('data-current');
+	const current = attr == null ? -1 : toInt(attr, 1) - 1;
 	const nearest = position.nearest();
 
 	if (!position.chosenHere(current) && nearest !== current) {
@@ -350,7 +352,7 @@ const settle = (root) => {
 		// request, don't scroll to it. Mark it "reported" so the change handler
 		// doesn't try to scroll back to it.
 		position.markReported(nearest);
-		root.setAttribute('data-index', nearest);
+		setIndexOf(root, nearest);
 	}
 
 	const index = indexOf(root);
@@ -398,7 +400,7 @@ Carousel.onMount((root) => {
 
 	nameNavControls(root);
 	setNavDisabled(root);
-	setNavCurrent(root, indexOf(root));
+	setNavCurrent(root, indexOf(root) + 1);
 	markSlides(root);
 
 	root._barelyPending = indexOf(root);
@@ -432,7 +434,7 @@ Carousel.onMount((root) => {
 			const nav = btn.dataset.nav;
 			if (nav === 'next') move(root, { dir: 1 });
 			else if (nav === 'prev') move(root, { dir: -1 });
-			else root.setAttribute('data-index', nav);
+			else root.setAttribute('data-current', nav);
 		},
 		'[data-nav]',
 	);
@@ -440,7 +442,7 @@ Carousel.onMount((root) => {
 	// Listen for external carousel nav events and move the carousel accordingly
 	listen(root, 'barely:carouselnav', (e) => {
 		if (e.detail.index != null)
-			root.setAttribute('data-index', e.detail.index);
+			root.setAttribute('data-current', e.detail.index);
 		else move(root, { dir: e.detail.dir });
 	});
 
@@ -459,23 +461,23 @@ Carousel.onMount((root) => {
 	});
 });
 
-// When [data-index] changes, paint immediately and then scroll
-Carousel.onChange('data-index', (root, value) => {
+// When [data-current] changes, paint immediately and then scroll
+Carousel.onChange('data-current', (root, value) => {
 	const geo = root._barelyGeometry;
 	if (!geo) return;
 
 	if (!geo.items.length) {
 		// Store pending request and apply it on the first measure
-		root._barelyPending = toInt(value, 0);
+		root._barelyPending = toInt(value, 1) - 1;
 		return;
 	}
 
-	const requested = toInt(value, 0);
+	const requested = toInt(value, 1) - 1;
 	const fromViewport = root._barelyPosition.wasReported(requested);
 
-	// Normalize the attribute once so data-index is always reachable
+	// Normalize the attribute once so data-current is always reachable
 	const index = clamp(requested, 0, lastIndexOf(root));
-	if (index !== requested) root.setAttribute('data-index', index);
+	if (index !== requested) setIndexOf(root, index);
 
 	publish(root, index);
 

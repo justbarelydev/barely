@@ -17,7 +17,7 @@
  *   data-nav              - "prev", "next", or a slide number
  *
  * State - mirrored from the carousel through data-for, never authored here:
- *   data-index, data-can-prev, data-can-next
+ *   data-current, data-can-prev, data-can-next
  *
  * Paints aria-current on the current number and aria-disabled on prev/next, and
  * names icon-only controls ("Go to slide 3"). Any name you provide yourself
@@ -48,7 +48,7 @@ import {
 } from './carousel-controls';
 
 const CarouselNav = Barely.register('carousel-nav', {
-	watch: ['data-index', 'data-can-prev', 'data-can-next'],
+	watch: ['data-current', 'data-can-prev', 'data-can-next'],
 });
 
 CarouselNav.onMount((root) => {
@@ -78,7 +78,7 @@ CarouselNav.onMount((root) => {
 	}
 
 	sync(root, root.dataset.for, [
-		'data-index',
+		'data-current',
 		'data-can-prev',
 		'data-can-next',
 	]);
@@ -103,7 +103,7 @@ CarouselNav.onMount((root) => {
 		setAttrs(root, { 'aria-orientation': vertical ? 'vertical' : null });
 
 		const current = numbered.findIndex(
-			(el) => el.dataset.nav === String(root.dataset.index),
+			(el) => el.dataset.nav === String(root.dataset.current),
 		);
 		rovingTabindex(numbered, current === -1 ? 0 : current);
 
@@ -136,5 +136,5 @@ const followActive = (root, index) => {
 
 CarouselNav.onChange('data-can-prev', setNavDisabled);
 CarouselNav.onChange('data-can-next', setNavDisabled);
-CarouselNav.onChange('data-index', setNavCurrent);
-CarouselNav.onChange('data-index', followActive);
+CarouselNav.onChange('data-current', setNavCurrent);
+CarouselNav.onChange('data-current', followActive);

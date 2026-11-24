@@ -39,7 +39,7 @@ const makeCarousel = (
 	if (title) root.setAttribute('title', title);
 	if (role) root.setAttribute('role', role);
 	if (tabindex != null) root.setAttribute('tabindex', tabindex);
-	if (index != null) root.setAttribute('data-index', index);
+	if (index != null) root.setAttribute('data-current', index);
 
 	const vertical = mode?.includes('vertical');
 	const indexDriven = mode?.includes('index');
@@ -118,7 +118,7 @@ describe('carousel state', () => {
 	it('mounts with the first item painted and the boundaries set', () => {
 		const { root, track } = makeCarousel('basic');
 
-		expect(root.getAttribute('data-index')).toBe('0');
+		expect(root.getAttribute('data-current')).toBe('1');
 		expect(track.children[0].hasAttribute('data-active')).toBe(true);
 		expect(root.hasAttribute('data-can-prev')).toBe(false);
 		expect(root.hasAttribute('data-can-next')).toBe(true);
@@ -135,10 +135,10 @@ describe('carousel state', () => {
 		expect(root.getAttribute('aria-roledescription')).toBe('carousel');
 	});
 
-	it('honors an authored data-index', () => {
-		const { root, track } = makeCarousel('authored', { index: '2' });
+	it('honors an authored data-current', () => {
+		const { root, track } = makeCarousel('authored', { index: '3' });
 
-		expect(root.getAttribute('data-index')).toBe('2');
+		expect(root.getAttribute('data-current')).toBe('3');
 		expect(track.children[2].hasAttribute('data-active')).toBe(true);
 		expect(track.scrollTo).toHaveBeenLastCalledWith({
 			left: 200,
@@ -147,23 +147,23 @@ describe('carousel state', () => {
 	});
 
 	it('keeps the requested index while a programmatic scroll runs', async () => {
-		const { root, track } = makeCarousel('jump', { index: '0' });
+		const { root, track } = makeCarousel('jump', { index: '1' });
 
-		root.setAttribute('data-index', '4');
+		root.setAttribute('data-current', '5');
 		await flush();
 
 		expect(track.scrollTo).toHaveBeenLastCalledWith({
 			left: 400,
 			behavior: 'auto',
 		});
-		expect(root.getAttribute('data-index')).toBe('4');
+		expect(root.getAttribute('data-current')).toBe('5');
 		expect(track.children[4].hasAttribute('data-active')).toBe(true);
 	});
 
 	it('does not reinterpret a partial position while an intent is in flight', async () => {
-		const { root, track } = makeCarousel('flight', { index: '0', nav: true });
+		const { root, track } = makeCarousel('flight', { index: '1', nav: true });
 
-		root.setAttribute('data-index', '4');
+		root.setAttribute('data-current', '5');
 		await flush();
 
 		// The browser has only moved part of the way (the scroll is animating).
@@ -173,20 +173,20 @@ describe('carousel state', () => {
 		await settleWait();
 
 		// Nearest-to-150 would be index 1; the intent says where we are going.
-		expect(root.getAttribute('data-index')).toBe('4');
+		expect(root.getAttribute('data-current')).toBe('5');
 
 		// Arrived: nothing left to correct.
 		track.scrollLeft = 400;
 		track.dispatchEvent(new Event('scroll'));
 		track.dispatchEvent(new Event('scrollend'));
 		await settleWait();
-		expect(root.getAttribute('data-index')).toBe('4');
+		expect(root.getAttribute('data-current')).toBe('5');
 	});
 
 	it('gives up on a destination the track never reaches', async () => {
-		const { root, track } = makeCarousel('stuck', { index: '0' });
+		const { root, track } = makeCarousel('stuck', { index: '1' });
 
-		root.setAttribute('data-index', '4');
+		root.setAttribute('data-current', '5');
 		await flush();
 
 		// The animation is interrupted and never arrives.
@@ -195,20 +195,20 @@ describe('carousel state', () => {
 		track.dispatchEvent(new Event('scroll'));
 		track.dispatchEvent(new Event('scrollend'));
 		await settleWait();
-		expect(root.getAttribute('data-index')).toBe('4');
+		expect(root.getAttribute('data-current')).toBe('5');
 
 		track.dispatchEvent(new Event('scroll'));
 		track.dispatchEvent(new Event('scrollend'));
 		await settleWait();
 
 		// Second settle with no movement: take the real position.
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 	});
 
 	it('hands the index back to the user when they grab the track', async () => {
-		const { root, track } = makeCarousel('takeover', { index: '0' });
+		const { root, track } = makeCarousel('takeover', { index: '1' });
 
-		root.setAttribute('data-index', '4');
+		root.setAttribute('data-current', '5');
 		await flush();
 
 		track.dispatchEvent(new Event('pointerdown'));
@@ -217,17 +217,17 @@ describe('carousel state', () => {
 		track.dispatchEvent(new Event('scrollend'));
 		await settleWait();
 
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 	});
 
 	it('settles to the item nearest the resting position', async () => {
-		const { root, track } = makeCarousel('follow', { index: '0' });
+		const { root, track } = makeCarousel('follow', { index: '1' });
 
 		track.scrollLeft = 150;
 		scrollTrack(track);
 		await settleWait();
 
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 		expect(track.children[1].hasAttribute('data-active')).toBe(true);
 	});
 
@@ -243,7 +243,7 @@ describe('carousel state', () => {
 		scrollTrack(track);
 		await settleWait();
 
-		expect(root.getAttribute('data-index')).toBe('3');
+		expect(root.getAttribute('data-current')).toBe('4');
 		expect(track.scrollLeft).toBe(350);
 		expect(track.scrollTo).not.toHaveBeenCalled();
 	});
@@ -254,7 +254,7 @@ describe('carousel state', () => {
 			viewport: 250,
 		});
 
-		root.setAttribute('data-index', '2');
+		root.setAttribute('data-current', '3');
 		await flush();
 
 		expect(track.scrollTo).toHaveBeenLastCalledWith({
@@ -264,7 +264,7 @@ describe('carousel state', () => {
 	});
 
 	it('announces the settled slide, not intermediate ones', async () => {
-		const { root, track } = makeCarousel('announce', { index: '0' });
+		const { root, track } = makeCarousel('announce', { index: '1' });
 		const live = root.querySelector('[aria-live]');
 
 		expect(live.textContent).toBe('');
@@ -277,7 +277,7 @@ describe('carousel state', () => {
 	});
 
 	it('emits afterchange once intent has landed', async () => {
-		const { root } = makeCarousel('events', { index: '0', nav: true });
+		const { root } = makeCarousel('events', { index: '1', nav: true });
 		const before = [];
 		const after = [];
 		root.addEventListener('barely:beforechange', (e) =>
@@ -289,12 +289,12 @@ describe('carousel state', () => {
 
 		navButton(root, 'next').click();
 		await flush();
-		expect(before).toEqual([1]);
+		expect(before).toEqual([2]);
 		expect(after).toEqual([]);
 
 		root.querySelector('[data-track]').dispatchEvent(new Event('scroll'));
 		await settleWait();
-		expect(after).toEqual([1]);
+		expect(after).toEqual([2]);
 	});
 });
 
@@ -310,7 +310,7 @@ describe('carousel stepping', () => {
 
 		next.click();
 		await flush();
-		expect(root.getAttribute('data-index')).toBe('3');
+		expect(root.getAttribute('data-current')).toBe('4');
 		expect(track.scrollTo).toHaveBeenLastCalledWith({
 			left: 300,
 			behavior: 'auto',
@@ -319,7 +319,7 @@ describe('carousel stepping', () => {
 		// Index 6 can never lead with 3 showing; the track stops at 5.
 		next.click();
 		await flush();
-		expect(root.getAttribute('data-index')).toBe('5');
+		expect(root.getAttribute('data-current')).toBe('6');
 		expect(track.scrollTo).toHaveBeenLastCalledWith({
 			left: 500,
 			behavior: 'auto',
@@ -329,17 +329,17 @@ describe('carousel stepping', () => {
 		// Nowhere left to go: no scroll, no relabel.
 		next.click();
 		await flush();
-		expect(root.getAttribute('data-index')).toBe('5');
+		expect(root.getAttribute('data-current')).toBe('6');
 	});
 
 	it('normalizes a requested index past the last reachable one', async () => {
 		const { root } = makeCarousel('clamp', { slides: 8, viewport: 300, itemsToShow: 3 });
 
-		root.setAttribute('data-index', '7');
+		root.setAttribute('data-current', '8');
 		await flush();
 		await flush();
 
-		expect(root.getAttribute('data-index')).toBe('5');
+		expect(root.getAttribute('data-current')).toBe('6');
 	});
 
 	it('lets every index be selected when nothing can scroll', async () => {
@@ -349,10 +349,10 @@ describe('carousel stepping', () => {
 			viewport: 500,
 		});
 
-		root.setAttribute('data-index', '2');
+		root.setAttribute('data-current', '3');
 		await flush();
 
-		expect(root.getAttribute('data-index')).toBe('2');
+		expect(root.getAttribute('data-current')).toBe('3');
 		expect(track.children[2].hasAttribute('data-active')).toBe(true);
 	});
 
@@ -364,10 +364,10 @@ describe('carousel stepping', () => {
 			nav: true,
 		});
 
-		root.setAttribute('data-index', '4');
+		root.setAttribute('data-current', '5');
 		await flush();
 
-		expect(root.getAttribute('data-index')).toBe('4');
+		expect(root.getAttribute('data-current')).toBe('5');
 		expect(track.children[4].hasAttribute('data-active')).toBe(true);
 		expect(navButton(root, 'next').getAttribute('aria-disabled')).toBe('true');
 	});
@@ -384,7 +384,7 @@ describe('carousel stepping', () => {
 
 		navButton(root, 'next').click();
 		await flush();
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 		expect(track.children[1].hasAttribute('data-active')).toBe(true);
 	});
 
@@ -399,7 +399,7 @@ describe('carousel stepping', () => {
 		expect(root.getAttribute('data-page')).toBe('1');
 		expect(root.getAttribute('data-total')).toBe('5');
 
-		root.setAttribute('data-index', '3');
+		root.setAttribute('data-current', '4');
 		await flush();
 		expect(root.getAttribute('data-page')).toBe('4');
 	});
@@ -415,13 +415,13 @@ describe('carousel stepping', () => {
 		expect(root.getAttribute('data-total')).toBe('4');
 
 		// The last reachable anchor is 5 (showing 5-6): the final page.
-		root.setAttribute('data-index', '5');
+		root.setAttribute('data-current', '6');
 		await flush();
 		expect(root.getAttribute('data-page')).toBe('4');
 		expect(root.getAttribute('data-total')).toBe('4');
 
 		// The anchor before it is still page 3.
-		root.setAttribute('data-index', '4');
+		root.setAttribute('data-current', '5');
 		await flush();
 		expect(root.getAttribute('data-page')).toBe('3');
 	});
@@ -438,7 +438,7 @@ describe('carousel stepping', () => {
 		expect(root.getAttribute('data-page')).toBe('1');
 		expect(root.getAttribute('data-total')).toBe('3');
 
-		root.setAttribute('data-index', '5');
+		root.setAttribute('data-current', '6');
 		await flush();
 		expect(root.getAttribute('data-page')).toBe('3');
 		expect(root.getAttribute('data-total')).toBe('3');
@@ -459,7 +459,7 @@ describe('carousel axis', () => {
 		await flush();
 
 		expect(event.defaultPrevented).toBe(true);
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 		expect(track.children[1].hasAttribute('data-active')).toBe(true);
 	});
 
@@ -476,7 +476,7 @@ describe('carousel axis', () => {
 			top: 100,
 			behavior: 'auto',
 		});
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 	});
 
 	it('maps ArrowDown/ArrowUp in vertical mode', async () => {
@@ -493,7 +493,7 @@ describe('carousel axis', () => {
 			}),
 		);
 		await flush();
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 
 		track.dispatchEvent(
 			new KeyboardEvent('keydown', {
@@ -503,7 +503,7 @@ describe('carousel axis', () => {
 			}),
 		);
 		await flush();
-		expect(root.getAttribute('data-index')).toBe('0');
+		expect(root.getAttribute('data-current')).toBe('1');
 	});
 });
 
@@ -585,10 +585,10 @@ describe('carousel index drive', () => {
 		navButton(root, 'next').click();
 		await flush();
 
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 		expect(track.children[1].hasAttribute('data-active')).toBe(true);
 		expect(track.scrollTo).not.toHaveBeenCalled();
-		expect(after).toEqual([1]);
+		expect(after).toEqual([2]);
 	});
 
 	it('keeps the index through a settle or resize', async () => {
@@ -599,7 +599,7 @@ describe('carousel index drive', () => {
 
 		navButton(root, 'next').click();
 		await flush();
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 
 		// No scroll ever happens here, so a settle must not re-derive the index
 		// from a viewport that has not moved.
@@ -607,7 +607,7 @@ describe('carousel index drive', () => {
 		track.dispatchEvent(new Event('scrollend'));
 		await settleWait();
 
-		expect(root.getAttribute('data-index')).toBe('1');
+		expect(root.getAttribute('data-current')).toBe('2');
 		expect(track.children[1].hasAttribute('data-active')).toBe(true);
 	});
 
@@ -629,7 +629,7 @@ describe('carousel index drive', () => {
 		navButton(root, 'next').click();
 		await flush();
 
-		expect(root.getAttribute('data-index')).toBe('2');
+		expect(root.getAttribute('data-current')).toBe('3');
 		expect(inPage()).toEqual([false, false, true, true, false, false]);
 	});
 
@@ -658,12 +658,12 @@ describe('carousel controls', () => {
 	});
 
 	it('marks the numeric control for the current slide', async () => {
-		const { root } = makeCarousel('dots', { dots: [0, 1, 2] });
-		const dots = [...root.querySelectorAll('[data-nav="0"], [data-nav="1"], [data-nav="2"]')];
+		const { root } = makeCarousel('dots', { dots: [1, 2, 3] });
+		const dots = [...root.querySelectorAll('[data-nav="1"], [data-nav="2"], [data-nav="3"]')];
 
 		expect(dots[0].getAttribute('aria-current')).toBe('true');
 
-		root.setAttribute('data-index', '2');
+		root.setAttribute('data-current', '3');
 		await flush();
 
 		expect(dots[2].getAttribute('aria-current')).toBe('true');
@@ -757,11 +757,11 @@ describe('carousel lifecycle', () => {
 	it('keeps a request made before the carousel is laid out', async () => {
 		const { root, track } = makeCarousel('hidden', { viewport: 0 });
 
-		root.setAttribute('data-index', '3');
+		root.setAttribute('data-current', '4');
 		await flush();
 
 		// No layout, so nothing is painted and nothing is thrown away.
-		expect(root.getAttribute('data-index')).toBe('3');
+		expect(root.getAttribute('data-current')).toBe('4');
 		expect(track.querySelector('[data-active]')).toBeNull();
 		expect(root._barelyPending).toBe(3);
 	});
@@ -771,7 +771,7 @@ describe('carousel lifecycle', () => {
 			viewport: 0,
 		});
 
-		root.setAttribute('data-index', '3');
+		root.setAttribute('data-current', '4');
 		await flush();
 
 		// The track gets a size (a tab revealed, a dialog opened).
@@ -784,7 +784,7 @@ describe('carousel lifecycle', () => {
 		await settleWait();
 
 		expect(root._barelyPending).toBeNull();
-		expect(root.getAttribute('data-index')).toBe('3');
+		expect(root.getAttribute('data-current')).toBe('4');
 		expect(track.children[3].hasAttribute('data-active')).toBe(true);
 		expect(track.scrollTo).toHaveBeenLastCalledWith({
 			left: 300,

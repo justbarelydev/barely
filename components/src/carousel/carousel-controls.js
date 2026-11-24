@@ -17,7 +17,7 @@ const hasLabelText = (el) => /[\p{L}\p{N}]/u.test(el.textContent ?? '');
 
 /**
  * Give icon-only [data-nav] controls a decent accessible name. Numbers are
- * zero-based slide indexes, matching [data-nav] and [data-index].
+ * 1-based slide numbers, matching [data-nav] and [data-current].
  *
  * @param {Element} root
  */
@@ -30,7 +30,7 @@ export const nameNavControls = (root) => {
 		else if (nav === 'next')
 			button.setAttribute('aria-label', 'Next slide');
 		else if (/^\d+$/.test(nav))
-			button.setAttribute('aria-label', `Go to slide ${Number(nav) + 1}`);
+			button.setAttribute('aria-label', `Go to slide ${Number(nav)}`);
 	});
 };
 
@@ -56,11 +56,11 @@ export const setNavDisabled = (root) => {
  * the others)
  *
  * @param {Element} root
- * @param {number|string} [index] - defaults to root's own [data-index]
+ * @param {number|string} [index] - defaults to root's own [data-current]
  */
 export const setNavCurrent = (
 	root,
-	index = root.getAttribute('data-index'),
+	index = root.getAttribute('data-current'),
 ) => {
 	const current = String(index);
 	root.querySelectorAll('[data-nav]').forEach((button) => {

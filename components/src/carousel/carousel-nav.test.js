@@ -28,13 +28,13 @@ const mountNav = ({ nav, text = '', attrs = {} }) => {
 const mountDots = (index) => {
 	const target = document.createElement('div');
 	target.id = 'dots-target';
-	target.setAttribute('data-index', index);
+	target.setAttribute('data-current', index);
 	document.body.appendChild(target);
 
 	const root = document.createElement('div');
 	root.setAttribute('data-component', 'carousel-nav');
 	root.dataset.for = '#dots-target';
-	const dots = [0, 1, 2].map((n) => {
+	const dots = [1, 2, 3].map((n) => {
 		const button = document.createElement('button');
 		button.dataset.nav = String(n);
 		button.textContent = '•';
@@ -50,14 +50,14 @@ const mountDots = (index) => {
 const mountFilmstrip = (index) => {
 	const target = document.createElement('div');
 	target.id = 'filmstrip-target';
-	target.setAttribute('data-index', index);
+	target.setAttribute('data-current', index);
 	document.body.appendChild(target);
 
 	const root = document.createElement('div');
 	root.setAttribute('data-component', 'carousel-nav');
 	root.dataset.for = '#filmstrip-target';
 	root.dataset.mode = 'scroll';
-	const thumbs = [0, 1, 2].map((n) => {
+	const thumbs = [1, 2, 3].map((n) => {
 		const button = document.createElement('button');
 		button.dataset.nav = String(n);
 		button.textContent = '•';
@@ -82,9 +82,9 @@ describe('carousel-nav accessible names', () => {
 		expect(button.getAttribute('aria-label')).toBe('Next slide');
 	});
 
-	it('names numeric controls by their zero-based destination', () => {
+	it('names numeric controls by their 1-based destination', () => {
 		const { button } = mountNav({ nav: '2', text: '•' });
-		expect(button.getAttribute('aria-label')).toBe('Go to slide 3');
+		expect(button.getAttribute('aria-label')).toBe('Go to slide 2');
 	});
 
 	it('keeps visible text as the accessible name (2.5.3 label in name)', () => {
@@ -107,20 +107,20 @@ describe('carousel-nav accessible names', () => {
 	it('marks the numeric control for the current slide', async () => {
 		const { dots, target } = mountDots('1');
 
-		expect(dots[1].getAttribute('aria-current')).toBe('true');
-		expect(dots[0].hasAttribute('aria-current')).toBe(false);
+		expect(dots[0].getAttribute('aria-current')).toBe('true');
+		expect(dots[1].hasAttribute('aria-current')).toBe(false);
 
-		target.setAttribute('data-index', '2');
+		target.setAttribute('data-current', '2');
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
-		expect(dots[2].getAttribute('aria-current')).toBe('true');
-		expect(dots[1].hasAttribute('aria-current')).toBe(false);
+		expect(dots[1].getAttribute('aria-current')).toBe('true');
+		expect(dots[0].hasAttribute('aria-current')).toBe(false);
 	});
 
 	it('scrolls the current control into view as the index changes', async () => {
 		const target = document.createElement('div');
 		target.id = 'scroll-target';
-		target.setAttribute('data-index', '0');
+		target.setAttribute('data-current', '1');
 		document.body.appendChild(target);
 
 		const root = document.createElement('div');
@@ -139,7 +139,7 @@ describe('carousel-nav accessible names', () => {
 			bottom: 40,
 		});
 
-		[0, 1, 2].forEach((n) => {
+		[1, 2, 3].forEach((n) => {
 			const button = document.createElement('button');
 			button.dataset.nav = String(n);
 			button.getBoundingClientRect = () => ({
@@ -157,7 +157,7 @@ describe('carousel-nav accessible names', () => {
 		initElement(root);
 		attachAttrMO(root, Registry.get('carousel-nav'));
 
-		target.setAttribute('data-index', '2');
+		target.setAttribute('data-current', '2');
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
 		// center dot 2: 2*100 - (300 - 100)/2 = 100
@@ -170,7 +170,7 @@ describe('carousel-nav accessible names', () => {
 	it('centers with the opposite scroll sign in RTL', async () => {
 		const target = document.createElement('div');
 		target.id = 'rtl-target';
-		target.setAttribute('data-index', '0');
+		target.setAttribute('data-current', '1');
 		document.body.appendChild(target);
 
 		const root = document.createElement('div');
@@ -192,7 +192,7 @@ describe('carousel-nav accessible names', () => {
 		});
 
 		// RTL lays children out from the right edge.
-		[0, 1, 2].forEach((n) => {
+		[1, 2, 3].forEach((n) => {
 			const button = document.createElement('button');
 			button.dataset.nav = String(n);
 			button.getBoundingClientRect = () => ({
@@ -210,7 +210,7 @@ describe('carousel-nav accessible names', () => {
 		initElement(root);
 		attachAttrMO(root, Registry.get('carousel-nav'));
 
-		target.setAttribute('data-index', '2');
+		target.setAttribute('data-current', '2');
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
 		// Same logical target as LTR, opposite sign on the physical scroll.
@@ -223,7 +223,7 @@ describe('carousel-nav accessible names', () => {
 	it('centers on the block axis in vertical mode', async () => {
 		const target = document.createElement('div');
 		target.id = 'vertical-target';
-		target.setAttribute('data-index', '0');
+		target.setAttribute('data-current', '1');
 		document.body.appendChild(target);
 
 		const root = document.createElement('div');
@@ -245,7 +245,7 @@ describe('carousel-nav accessible names', () => {
 			bottom: 300,
 		});
 
-		[0, 1, 2].forEach((n) => {
+		[1, 2, 3].forEach((n) => {
 			const button = document.createElement('button');
 			button.dataset.nav = String(n);
 			button.getBoundingClientRect = () => ({
@@ -263,7 +263,7 @@ describe('carousel-nav accessible names', () => {
 		initElement(root);
 		attachAttrMO(root, Registry.get('carousel-nav'));
 
-		target.setAttribute('data-index', '2');
+		target.setAttribute('data-current', '2');
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
 		expect(root.scrollTo).toHaveBeenLastCalledWith({
@@ -314,8 +314,8 @@ describe('carousel-nav filmstrip', () => {
 
 		expect(root.getAttribute('role')).toBe('toolbar');
 		expect(thumbs.map((t) => t.getAttribute('tabindex'))).toEqual([
-			'-1',
 			'0',
+			'-1',
 			'-1',
 		]);
 	});
@@ -323,18 +323,18 @@ describe('carousel-nav filmstrip', () => {
 	it('marks the current thumbnail with aria-current', async () => {
 		const { thumbs, target } = mountFilmstrip('1');
 
-		expect(thumbs[1].getAttribute('aria-current')).toBe('true');
-		expect(thumbs[0].hasAttribute('aria-current')).toBe(false);
+		expect(thumbs[0].getAttribute('aria-current')).toBe('true');
+		expect(thumbs[1].hasAttribute('aria-current')).toBe(false);
 
-		target.setAttribute('data-index', '2');
+		target.setAttribute('data-current', '2');
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
-		expect(thumbs[2].getAttribute('aria-current')).toBe('true');
-		expect(thumbs[1].hasAttribute('aria-current')).toBe(false);
+		expect(thumbs[1].getAttribute('aria-current')).toBe('true');
+		expect(thumbs[0].hasAttribute('aria-current')).toBe(false);
 	});
 
 	it('moves focus and selects with arrow keys, like a nested nav', () => {
-		const { thumbs, target } = mountFilmstrip('0');
+		const { thumbs, target } = mountFilmstrip('1');
 		const events = [];
 		target.addEventListener('barely:carouselnav', (e) =>
 			events.push(e.detail),
@@ -349,7 +349,7 @@ describe('carousel-nav filmstrip', () => {
 			}),
 		);
 
-		expect(events).toEqual([{ index: '1' }]);
+		expect(events).toEqual([{ index: '2' }]);
 		expect(document.activeElement).toBe(thumbs[1]);
 		expect(thumbs[1].getAttribute('tabindex')).toBe('0');
 		expect(thumbs[0].getAttribute('tabindex')).toBe('-1');
@@ -361,7 +361,7 @@ describe('carousel-nav filmstrip', () => {
 				cancelable: true,
 			}),
 		);
-		expect(events).toEqual([{ index: '1' }, { index: '1' }]);
+		expect(events).toEqual([{ index: '2' }, { index: '2' }]);
 	});
 
 	it('leaves prev/next out of the arrow roving set', () => {
@@ -502,10 +502,10 @@ describe('carousel-nav naming', () => {
 });
 
 describe('carousel-nav modes', () => {
-	const mountMode = (mode, navs = ['0', '1', '2']) => {
+	const mountMode = (mode, navs = ['1', '2', '3']) => {
 		const target = document.createElement('div');
 		target.id = 'mode-target';
-		target.setAttribute('data-index', '0');
+		target.setAttribute('data-current', '1');
 		document.body.appendChild(target);
 
 		const root = document.createElement('div');
@@ -551,7 +551,7 @@ describe('carousel-nav modes', () => {
 				cancelable: true,
 			}),
 		);
-		expect(events).toEqual([{ index: '1' }]);
+		expect(events).toEqual([{ index: '2' }]);
 		expect(document.activeElement).toBe(controls[1]);
 
 		events.length = 0;
