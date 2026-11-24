@@ -18,6 +18,10 @@
  * Packages that are already committed but untagged get offered as a
  * plain tag (no new commit) - for filling in missed tags.
  *
+ * A version that is tagged but missing from the npm registry is reported
+ * as `tagged, not published` and offered as a plain tag: the tag is a local
+ * bookkeeping fact, and only `npm publish` puts anything on the registry.
+ *
  * Push is NOT run. After all packages are committed/tagged locally, the
  * script shows a final review (new commits + diff stat) and prints an
  * escape hatch (`git reset --soft <head>` + `git tag -d`). You push
@@ -73,6 +77,28 @@ function latestTag(name) {
 	if (!tags.length) return null;
 	tags.sort((a, b) => compareVers(verOf(b, name), verOf(a, name)));
 	return tags[0];
+}
+
+// The registry, not the tag, is what makes a version installable. Best effort:
+// offline, a 404, or a timeout all read as "unknown", which falls back to the
+// tag-only check so the script still works with no network.
+// `{ latest }` when the registry answers, `{ missing: true }` when it has never
+// heard of the name (404), and `null` when we can't tell (offline, timeout).
+async function npmLatest(name, timeout = 1500) {
+	const url = `https://registry.npmjs.org/${name.replace('/', '%2F')}`;
+	const ctrl = new AbortController();
+	const timer = setTimeout(() => ctrl.abort(), timeout);
+	try {
+		const res = await fetch(url, { signal: ctrl.signal });
+		if (res.status === 404) return { missing: true };
+		if (!res.ok) return null;
+		const data = await res.json();
+		return { latest: data?.['dist-tags']?.latest ?? null };
+	} catch {
+		return null;
+	} finally {
+		clearTimeout(timer);
+	}
 }
 
 function commitsSince(name, dir) {
@@ -225,9 +251,57 @@ function isChanged(p) {
 	return hasUncommitted(p) || !isVersionTagged(p);
 }
 
+/**
+ * A tagged version can still be missing from the registry, and then nothing is
+ * installable: dependents resolve their caret ranges against npm, not against
+ * the tag. Checks the packages that `isChanged` would skip.
+ *
+ * Only flags a local version that is *ahead* of the registry's latest, so an
+ * offline machine (or a newer publish from elsewhere) never triggers a bump.
+ */
+async function findUnpublished(packages) {
+	const tagged = packages.filter((p) => !p.pkg.private && isVersionTagged(p));
+	const found = await Promise.all(
+		tagged.map(async (p) => ({ p, npm: await npmLatest(p.pkg.name) })),
+	);
+	return found
+		.filter(({ p, npm }) => {
+			if (!npm) return false; // unknown - fall back to the tag-only check
+			if (npm.missing) return true;
+			const latest = npm.latest;
+			return !!latest && compareVers(p.pkg.version, latest) > 0;
+		})
+		.map(({ p, npm }) => ({
+			...p,
+			latest: npm.missing ? null : npm.latest,
+		}));
+}
+
 async function main() {
 	const filter = process.argv.slice(2);
 	let candidates = packages.filter(isChanged);
+
+	// Tagged but never published: the tag is a local fact, npm is the real one.
+	const unpublished = await findUnpublished(packages);
+	if (unpublished.length) {
+		console.log(
+			bold('\nTagged locally but missing from npm:'),
+		);
+		for (const p of unpublished)
+			console.log(
+				`  ${p.pkg.name}  ${dim(`v${p.pkg.version}`)}  ${yellow(p.latest ? `npm has ${p.latest}` : 'never published')}`,
+			);
+		console.log(
+			dim(
+				'  Tag is local bookkeeping - publish these by hand from the package dir:',
+			),
+		);
+		console.log(
+			dim(
+				`  ${unpublished.map((p) => p.pkg.name).join(' ')}  ->  npm publish (one dir at a time, in dependency order)`,
+			),
+		);
+	}
 	if (filter.length) {
 		candidates = candidates.filter((p) =>
 			filter.some(
@@ -239,7 +313,11 @@ async function main() {
 	}
 
 	if (!candidates.length) {
-		console.log('No workspace packages have changes to publish.');
+		console.log(
+			unpublished.length
+				? 'Nothing to bump or tag - publish the versions above, then re-run.'
+				: 'No workspace packages have changes to publish.',
+		);
 		rl.close();
 		return;
 	}
